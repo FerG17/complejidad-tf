@@ -50,7 +50,6 @@ def main():
     fig.suptitle(f"{NOMBRE.get(pab, NOMBRE_DEF(pab))} - {pisos} pisos | Entrada Alonso de Molina -> {G.nodos[dest]['etiqueta']} | {aviso}\n"
                  f"A*: {len(ruta)} nodos, costo {costo:.0f} m-eq, {exp} expandidos | {len(nodos)} nodos, {len(aristas)} aristas, "
                  f"{n_puertas} puertas (nodos)", fontsize=11.5, fontweight="bold")
-    # ---- 3D
     a3 = fig.add_axes([-0.02, 0.03, 0.34, 0.86], projection="3d")
     COL = {"pasillo": "#aab4c2", "escalera": "#d62828", "ascensor": "#1b9e3e", "puerta": "#f28c1b"}
     for e in aristas:
@@ -68,7 +67,6 @@ def main():
     a3.set_axis_off()
     for p in range(1, pisos + 1):
         a3.text(min(xs3) - 3, max(ys3), (p - 1) * 3.5 * ZE, f"p{p}", fontsize=9)
-    # ---- 2D por piso
     xs = [n["x_px"] for n in nodos]
     ys = [n["y_px"] for n in nodos]
     cols = 3 if pisos <= 6 else 4

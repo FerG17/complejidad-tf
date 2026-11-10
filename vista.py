@@ -1,16 +1,9 @@
 """
-Dibujo.  Izquierda: plano oficial 2D del piso elegido (pyqtgraph).  Derecha: grafo 3D con OpenGL (GPU).
+Dibujo. Izquierda: plano 2D del piso elegido (pyqtgraph). Derecha: grafo 3D con OpenGL.
 
-Vista 3D (modos):
-  Auto            -> sigue la ruta: muestra por dentro SOLO los pabellones por donde pasa y hace zoom ahi
-  Campus completo -> todo el campus: cada pabellon como edificio (muros por piso, columnas en las esquinas, techo)
-  Pabellon X      -> interior de un solo pabellon, con zoom
-  "Ver piso"      -> filtra un solo piso (0 = todos)
-Los pabellones que no se estan viendo por dentro aparecen como masas tenues, y el plano del campus hace de suelo.
-
-Las capas estaticas (aristas, cascarones, salas) se reensamblan solo cuando cambia el modo, el piso o la ruta;
-lo que se mueve (expandidos, ruta, caminante, barreras) son items pequenos que se actualizan en cada paso.
-Mouse en el 3D: arrastrar = rotar | rueda = zoom | boton central o Ctrl+arrastrar = mover.
+Modos 3D: Auto (sigue la ruta), Campus completo (cada pabellon como edificio), Pabellon X; "Ver piso" filtra un piso.
+Las capas estaticas se reensamblan solo al cambiar modo, piso o ruta; lo dinamico (expandidos, ruta, caminante,
+barreras) se actualiza en cada paso. Mouse en el 3D: arrastrar = rotar, rueda = zoom, boton central o Ctrl = mover.
 """
 import numpy as np
 import pyqtgraph as pg

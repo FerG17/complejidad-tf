@@ -1,19 +1,14 @@
 """
 Generador del grafo 3D del Campus Monterrico (UPC) - Equipo 10, 1ACC0184.
 
-Une:
-  * el grafo EXTERIOR (ruta accesible del plano oficial, ver exterior.py), y
-  * los CASCARONES de cada pabellon (pasillo + escaleras + ascensor por piso, sin aulas todavia).
+Une el grafo exterior (exterior.py) con los pabellones por piso (pabellon_lineal, pabellon_a, biblioteca) y los
+conecta con pasajes. Devuelve un Grafo en memoria y, como script, exporta datos/nodos.csv y datos/aristas.csv.
 
-Salida: objeto Grafo (en memoria) y, si se ejecuta como script, datos/nodos.csv y datos/aristas.csv.
-
-Supuestos (marcados en la columna "nota" de aristas.csv para poder corregirlos):
-  * ESCALA: 0.275 m/px. Calibrada registrando 9 pabellones del plano contra Google Maps (rotacion ~41 grados) y la
-    medicion Primavera-Alonso de Molina = 131.85 m (los extremos caen en los bordes norte y sur del plano). Error ~7 m.
-  * BASE_Z: altura del piso 1 de cada pabellon (por ahora 0 en todos; el campus tiene pendiente).
-  * Los pasillos J-B, C-D y E-F-G (todos los pisos) estan a nivel y son accesibles.
-  * E-A: solo escaleras (no accesible).
-  * Pabellones K y L: NO incluidos todavia (sus entradas siguen como nodos del grafo exterior).
+Supuestos (las aristas supuestas llevan nota en aristas.csv):
+  * ESCALA 0.275 m/px: calibrada contra Google Maps y la medicion Primavera-Alonso de Molina (131.85 m), error ~7 m.
+  * BASE_Z = 0 en todos los pabellones (el campus tiene pendiente).
+  * Pasillos J-B, C-D y E-F-G a nivel y accesibles en todos los pisos; E-A solo por escaleras.
+  * Pabellones K y L no incluidos todavia.
 """
 import csv
 import math
@@ -25,7 +20,7 @@ import pabellon_lineal
 import pabellones_datos
 import exterior
 
-ESCALA = 0.275       # metros por pixel del plano (calibrada: linea Av. Primavera - Jr. Alonso de Molina = 131.85 m en Google Maps)
+ESCALA = 0.275       # metros por pixel del plano
 ALTO_PISO = 3.5      # metros entre pisos
 ESPACIADO = 1.5      # metros entre nodos consecutivos de un pasillo
 COSTO_ESCALERA = 3.0 # una escalera cuesta 3x el desnivel (esfuerzo)
@@ -33,14 +28,6 @@ COSTO_ASCENSOR = 8.0 # penalizacion fija por esperar/usar el ascensor (en metros
 
 BASE_Z = {p: 0.0 for p in "ABCDEFGHIJ"}
 
-# ---------------------------------------------------------------------------
-# Especificacion de pabellones (coordenadas en pixeles del plano).
-#   tipo "recta": pasillo de p0 a p1.   t en [0,1] = posicion a lo largo del pasillo.
-#   tipo "anillo": pasillo circular (centro, radio).  t en [0,1) = vuelta completa desde el este.
-#   entradas: (id nodo exterior, t)  -> union al piso 1
-#   ascensor: (t, id nodo exterior o None)
-#   escaleras: lista de t
-# ---------------------------------------------------------------------------
 PAB = {
     "A": dict(nombre="Pabellon A (16/17/18) + Aula Magna", pisos=5, tipo="detallado", modulo="A"),
     "B": dict(nombre="Pabellon B (34)", pisos=5, tipo="detallado", modulo="L"),
@@ -63,7 +50,6 @@ PASAJES = [
                             "hay escaleras); posicion aproximada en el extremo norte"),
 ]
 
-# Zonas / puntos de interes dentro de pabellones (se cuelgan del pasillo del piso indicado)
 ZONAS = []   # las salas de cada pabellon viven en pabellones_datos.py / pabellon_a.py / biblioteca.py
 # Zonas exteriores: (id, etiqueta, nodo exterior al que se cuelgan, dx, dy en px)
 ZONAS_EXT = [
@@ -75,7 +61,7 @@ ZONAS_EXT = [
 def _nombre(n):
     """Nombre legible y buscable de cada nodo (ej. 'I p7 - CUB-54 (aprox)', 'Ascensor 1 (I) p3')."""
     t, e, p, pis = n["tipo"], n["etiqueta"], n["pab"], n["piso"]
-    if not p:      # exterior
+    if not p:
         if t == "interseccion":
             return f"Cruce exterior {n['id']}"
         if t == "ascensor":
@@ -100,7 +86,6 @@ class Grafo:
         self.aristas = []    # dict(a,b,w,tipo,acc,nota)
         self._adj = None
 
-    # --- construccion -----------------------------------------------------
     def nodo(self, i, xpx, ypx, z, piso, pab, tipo, etiqueta="", **extra):
         assert i not in self.nodos, f"nodo duplicado {i}"
         self.nodos[i] = dict(id=i, x_px=xpx, y_px=ypx, x=xpx * ESCALA, y=ypx * ESCALA, z=z,
@@ -116,7 +101,6 @@ class Grafo:
             w = max(self.d3(a, b), 0.5)
         self.aristas.append(dict(a=a, b=b, w=w, tipo=tipo, acc=acc, nota=nota))
 
-    # --- consulta -----------------------------------------------------------
     @property
     def adj(self):
         if self._adj is None:
@@ -216,7 +200,6 @@ def construir(espaciado=ESPACIADO):
             def pos(t):
                 return (round(t * n) % n) if cerrado else int(round(t * (n - 1)))
 
-            # escaleras
             for s, t in enumerate(sp["escaleras"]):
                 k = pos(t)
                 x, y = pts[k]
@@ -225,7 +208,6 @@ def construir(espaciado=ESPACIADO):
                 G.nodo(i, x + 7 * nx, y + 7 * ny, z, piso, p, "escalera", f"Escalera {s + 1}")
                 G.arista(ids[k], i, "pasillo")
                 ancla[(p, piso, "esc", s)] = i
-            # ascensor
             if sp["ascensor"]:
                 t, ext = sp["ascensor"]
                 k = pos(t)
@@ -235,7 +217,6 @@ def construir(espaciado=ESPACIADO):
                 G.nodo(i, x - 7 * nx, y - 7 * ny, z, piso, p, "ascensor", f"Ascensor {p}")
                 G.arista(ids[k], i, "pasillo")
                 ancla[(p, piso, "asc", 0)] = i
-        # verticales
         for piso in range(1, sp["pisos"]):
             for s in range(len(sp["escaleras"])):
                 a, b = ancla[(p, piso, "esc", s)], ancla[(p, piso + 1, "esc", s)]
@@ -243,7 +224,6 @@ def construir(espaciado=ESPACIADO):
             if sp["ascensor"]:
                 a, b = ancla[(p, piso, "asc", 0)], ancla[(p, piso + 1, "asc", 0)]
                 G.arista(a, b, "ascensor", acc=True, w=ALTO_PISO + COSTO_ASCENSOR)
-        # entradas (piso 1)
         n_ids = idx[(p, 1)]
         for ext_id, t in sp["entradas"]:
             k = (round(t * n) % n) if cerrado else int(round(t * (n - 1)))

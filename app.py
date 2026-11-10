@@ -1,16 +1,12 @@
 """
-Navegacion accesible en el Campus Monterrico (UPC) - Equipo 10 - 1ACC0184 Complejidad Algoritmica
-Grafo 3D (exterior + pabellones por piso), BFS (conectividad) y A* (ruta optima) animados en tiempo real.
+Navegacion accesible en el Campus Monterrico (UPC) - Equipo 10 - 1ACC0184 Complejidad Algoritmica.
+Grafo 3D del campus con BFS (existe ruta) y A* (ruta optima) animados en tiempo real.
 
-Uso:   python app.py                       -> abre la ventana interactiva
-       python app.py --prueba [--salida D] -> escenario de ejemplo que guarda capturas PNG (abre la ventana unos segundos)
+  python app.py                         ventana interactiva
+  python app.py --prueba [--salida D]   escenario de ejemplo con capturas PNG (abre la ventana unos segundos)
 
-Controles:
-  Panel izquierdo: escribe en Origen / Destino ("salon 51", "e 51", "cub 54", "bano piso 3", "labs computo c")
-  o filtra por pabellon y piso, y haz clic en un resultado (Enter = el primero).
-  Plano 2D: clic izquierdo = ORIGEN, clic derecho = DESTINO sobre el piso que se muestra.
-  Iniciar (espacio)   Barrera tramo (b)   Ascensor fuera (a)   Reiniciar (r)
-  3D: arrastrar = rotar, rueda = zoom, boton central o Ctrl+arrastrar = mover.
+Panel izquierdo: buscar origen y destino por nombre, filtrar por pabellon y piso. Plano 2D: clic izquierdo = origen,
+clic derecho = destino. Atajos: espacio = iniciar, b = barrera en el tramo, a = ascensor fuera de servicio, r = reiniciar.
 """
 import sys
 from pathlib import Path

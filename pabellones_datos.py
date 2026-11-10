@@ -13,7 +13,6 @@ def aulas(letra, piso, nums):
     return [f"Aula {letra}-{piso}{n}" for n in nums]
 
 
-# --------------------------------------------------------------------------- B
 B = dict(pisos=5, corredor=[(337, 298), (337, 394)], prof=30, entradas=[("P34", 0.93)], ascensor=None,
          escaleras=[(0.04, -8), (0.5, -8), (0.96, -8)], salas={
     1: {"+": ["Aula B-10", "Aula B-11", "Aula B-12", "CICS", "Coordinacion de seguridad", "Objetos perdidos"],
@@ -26,7 +25,6 @@ B = dict(pisos=5, corredor=[(337, 298), (337, 394)], prof=30, entradas=[("P34", 
     5: {"+": ["Aula B-51", "Aula B-52", "Aula B-53", "Terraza"], "-": ["Aula acustica de musica B-54", "Aula B-55"]},
 })
 
-# --------------------------------------------------------------------------- C
 C = dict(pisos=5, corredor=[(202, 298), (202, 428)], prof=32, entradas=[("P29", 0.58), ("P29w", 0.5)], ascensor=None,
          escaleras=[(0.04, 8), (0.5, 8), (0.96, 8)], salas={
     1: {"+": ["Almacen de quimica (C-10)", "Lab. de quimica C-11", "Aula C-12", "Aula C-13", "Capstone ing. industrial C-14"],
@@ -40,7 +38,7 @@ C = dict(pisos=5, corredor=[(202, 298), (202, 428)], prof=32, entradas=[("P29", 
         "-": ["Aula C-57", "Aula C-59", "Lab. electronica (aprox)"]},
 })
 
-# --------------------------------------------------------------------------- D  (p4 = p5; solo p1 cambia)
+# D: p4 = p5 (plantilla tipica), solo p1 cambia
 _D_TIP = lambda p: {"+": [f"Aula D-{p}1", f"Aula D-{p}2", f"Aula D-{p}3", f"Aula D-{p}4", f"Aula D-{p}5 (aprox)"],
                     "-": [f"Aula D-{p}6", f"Lab. computo D-{p}7", f"Aula D-{p}8", f"Lab. MAC D-{p}9", "SSHH varones", "SSHH damas"]}
 D = dict(pisos=5, corredor=[(116, 298), (116, 448)], prof=28, entradas=[("P28", 0.86)], ascensor=(0.97, "A28", -9),
@@ -54,7 +52,6 @@ D = dict(pisos=5, corredor=[(116, 298), (116, 448)], prof=28, entradas=[("P28", 
     4: _D_TIP(4), 5: _D_TIP(5),
 })
 
-# --------------------------------------------------------------------------- J
 _J_SS = ["SSHH varones", "SSHH mujeres"]
 J = dict(pisos=5, corredor=[(230, 322), (298, 322)], prof=24, entradas=[("P31", 0.93)], ascensor=(1.0, "A32", -9),
          escaleras=[(0.0, 8), (0.86, 8)], salas={
@@ -67,7 +64,6 @@ J = dict(pisos=5, corredor=[(230, 322), (298, 322)], prof=24, entradas=[("P31", 
     5: {"+": _J_SS + ["Asesoria riesgo", "Sala de reuniones"], "-": ["PTC 1 (aprox)", "PTC 2 (aprox)", "PTC 3 (aprox)"]},
 })
 
-# --------------------------------------------------------------------------- E
 def _E(p, lab=False):
     arriba = ([f"Aula E-{p}{n}" for n in (1, 2, 3, 4)] if not lab else ["Lab. multifuncional", "Lab. biologico", "Oficina (aprox)", "Lab. (aprox)"])
     return {"-": arriba, "+": ([f"Aula E-{p}{n}" for n in (5, 6, 7, 8)] if p != 1 else ["Taller 1 (aprox)", "Taller 2 (aprox)", "Lab. 1 (aprox)", "Lab. 2 (aprox)"]) + ["SSHH hombres", "SSHH mujeres"]}
@@ -76,20 +72,20 @@ E = dict(pisos=5, corredor=[(396, 648), (473, 648)], prof=34, entradas=[("P15", 
                                                               5: {"-": ["Lab. computo E-54", "Lab. computo E-53", "Aula E-52", "Aula E-51"],
                                                                   "+": ["Aula E-55", "Aula E-56", "Aula E-57", "Aula E-58", "SSHH hombres", "SSHH mujeres"]}})
 
-# --------------------------------------------------------------------------- F  (ala larga E-O)
+# F: ala larga E-O
 def _F(p):
     return {"-": [f"F-{p}1 (aprox)", f"F-{p}2 (aprox)", f"F-{p}3 (aprox)", f"F-{p}4 (aprox)"],
             "+": [f"F-{p}5 (aprox)", f"F-{p}6 (aprox)", f"F-{p}7 (aprox)", f"F-{p}8 (aprox)"]}
 F = dict(pisos=5, corredor=[(480, 648), (606, 648)], prof=34, entradas=[], ascensor=None,
          escaleras=[(0.12, 8), (0.88, 8)], salas={p: _F(p) for p in range(1, 6)})
 
-# --------------------------------------------------------------------------- G  (ala NNE, con ascensor)
+# G: ala NNE, con ascensor
 def _G(p):
     return {"+": [f"Aula G-{p}1 (aprox)", f"Aula G-{p}2 (aprox)", "SSHH"], "-": [f"Aula G-{p}3 (aprox)", f"Aula G-{p}4 (aprox)"]}
 G = dict(pisos=5, corredor=[(622, 630), (650, 540)], prof=22, entradas=[("P12", 0.08)], ascensor=(0.12, "A12", 8),
          escaleras=[(0.3, -8), (0.92, -8)], salas={p: _G(p) for p in range(1, 6)})
 
-# --------------------------------------------------------------------------- H  (anillo alrededor del vacio central)
+# H: anillo alrededor del vacio central
 def _Hp(p, nombres):
     return {"+": nombres}
 H = dict(pisos=5, corredor=[(612, 438), (722, 425), (708, 508), (612, 508)], cerrado=True, prof=26,

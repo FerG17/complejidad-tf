@@ -27,7 +27,6 @@ class Simulador:
         self.sin_acceso_base = ascensores.pisos_sin_acceso(G, ())
         self.reiniciar(todo=True)
 
-    # ------------------------------------------------------------------ estado
     def reiniciar(self, todo=False):
         if todo:
             self.origen = None
@@ -92,7 +91,6 @@ class Simulador:
         resto = f" Sin acceso por eso: {ascensores.texto_pisos(extra)}." if extra else ""
         return f" Ascensores fuera de servicio: {', '.join(self.nombres_fuera())}.{resto}"
 
-    # ------------------------------------------------------------------ tick
     def tick(self, pasos_busqueda=6, dt=0.04, mult=6.0):
         """Avanza la simulacion un poco. Devuelve True si algo cambio."""
         if self.estado == "buscando":
@@ -133,7 +131,6 @@ class Simulador:
             return True
         return False
 
-    # ------------------------------------------------------------------ barreras
     def barrera_tramo(self):
         """Bloquea el siguiente tramo de la ruta y recalcula desde el nodo actual."""
         if self.estado != "caminando" or self.walker_i >= len(self.ruta) - 1:
@@ -183,7 +180,6 @@ class Simulador:
                 return
         self.msg = "La ruta actual no pasa por ningun ascensor que siga en servicio."
 
-    # ------------------------------------------------------------------ posicion
     def pos_walker(self):
         """(x_px, y_px, x_m, y_m, z_m) del caminante, interpolado sobre el tramo actual."""
         if not self.ruta:

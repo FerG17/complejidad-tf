@@ -1,13 +1,11 @@
 """
-Constructor generico de pabellones (corredor poligonal + salas a los lados con puertas), pisos 1..n.
-Usado por B, C, D, E, F, G, H y J (A e I tienen modulos propios mas detallados).
+Constructor generico de pabellones de pasillo (corredor poligonal + salas a los lados con puertas), pisos 1..n.
+Lo usan B, C, D, E, F, G, H y J; A e I tienen modulos propios.
 
-spec = dict(pisos, corredor=[(x,y)...] en pixeles del plano, cerrado=False, prof=px de profundidad de salas,
-            entradas=[(id_exterior, t)], ascensor=(t, id_exterior|None, offset_px)|None,
-            escaleras=[(t, offset_px)], salas={piso: {"+": [nombres], "-": [nombres]}})
-t = fraccion a lo largo del corredor (0..1). "+" = lado izquierdo del sentido de avance (normal (-dy,dx)); "-" = el otro lado.
-En corredores cerrados (anillos) las salas van hacia afuera ("+").
-Las salas de nombre "(aprox)" no vienen en las placas con ese numero exacto.
+spec = dict(pisos, corredor=[(x,y)...] en px del plano, cerrado, prof, entradas=[(id_exterior, t)],
+            ascensor=(t, id_exterior|None, offset_px)|None, escaleras=[(t, offset_px)],
+            salas={piso: {"+": [nombres], "-": [nombres]}})
+t = fraccion a lo largo del corredor; "+" = lado izquierdo del avance, "-" el otro; en anillos las salas van hacia afuera.
 """
 import math
 
@@ -85,7 +83,6 @@ def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc,
             G.nodo(i, pts[k][0] + nx * abs(off), pts[k][1] + ny * abs(off), z, p, pab, "ascensor", f"Ascensor {pab}")
             G.arista(ids[k], i, "pasillo")
             anc[(p, "asc")] = i
-        # salas
         for lado, signo in (("+", 1), ("-", -1)):
             nombres = sp["salas"].get(p, {}).get(lado, [])
             for j, etq in enumerate(nombres):
@@ -100,7 +97,6 @@ def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc,
             G.arista(anc[(p, f"esc{s + 1}")], anc[(p + 1, f"esc{s + 1}")], "escalera", acc=False, w=alto_piso * costo_esc)
         if sp.get("ascensor"):
             G.arista(anc[(p, "asc")], anc[(p + 1, "asc")], "ascensor", acc=True, w=alto_piso + costo_asc)
-    # entradas desde el exterior (piso 1) con nodo puerta
     for ext, t in sp["entradas"]:
         k = k_de(t)
         a, b = G.nodos[ext], G.nodos[ids_por_piso[1][k]]

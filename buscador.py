@@ -1,13 +1,8 @@
 """
-Buscador de nodos por nombre (sin tildes, sin importar mayusculas ni el orden de las palabras).
-  buscar(G, "cub 54")              -> CUB-54 de la Biblioteca (piso 7)
-  buscar(G, "salon 51")            -> Aula X-51 de cada pabellon (piso 5, aula 1)
-  buscar(G, "e 51")                -> Aula E-51
-  buscar(G, "quinto piso aula 1")  -> aulas del piso 5 que terminan en 1
-  buscar(G, "labs computo c p4")   -> laboratorios de computo del pabellon C, piso 4
-  buscar(G, "bano")                -> SSHH de todos los pabellones
-  buscar(G, "", pab="H", piso=3)   -> todo lo identificable en el pabellon H, piso 3
-Solo busca puntos "identificables": salas/aulas, ascensores, escaleras y entradas/rampas exteriores.
+Buscador de nodos por nombre (sin tildes, mayusculas ni orden de palabras).
+Entiende sinonimos (salon, bano, laboratorio...), codigos de aula (51 = piso 5, aula 1) y filtros de piso y pabellon:
+"salon 51", "e 51", "quinto piso aula 1", "bano piso 3", "labs computo c", "cub 54".
+Solo busca puntos identificables: salas, ascensores, escaleras y entradas exteriores.
 """
 import re
 import unicodedata

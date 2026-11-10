@@ -128,9 +128,7 @@ nodo("P8a", 630, 405, "entrada_accesible", "Pab. 8")
 nodo("R8", 639, 405, "rampa", "R")
 nodo("P8b", 632, 446, "entrada_accesible", "Pab. 8/9")
 
-# ---------------------------------------------------------------------------
-# 2. ARISTAS: se trazan siguiendo la ruta accesible del plano
-# ---------------------------------------------------------------------------
+# Aristas: siguen la ruta accesible del plano
 E = []
 
 

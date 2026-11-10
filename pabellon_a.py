@@ -1,13 +1,8 @@
 """
-Pabellon A (Aula Magna incluida), pisos 1-5, a partir de las placas EV-M-01 (dic 2020).
-Estructura (placas con el norte arriba):
-  * Ovalo OESTE = Aula Magna (103 alumnos, p1 y p3). p2 y p4: solo vacio. p5: GEA, set de fotografia (14),
-    almacen de audiovisuales y maquillaje.
-  * HALL ESCALERA (oeste del bloque central) con la escalera 1 semicircular.
-  * Bloque central: 4 aulas (x1 SO, x2 SE, x3 NO, x4 NE) alrededor del cruce de la circulacion E-O.
-  * Circulacion N-S en el lado este, con el bloque este (aulas x5/x6 o SSHH) y la escalera 2 (NE).
-  * NO TIENE ASCENSOR: solo el piso 1 es accesible. Las escaleras no son accesibles.
-Conversion placa->plano campus: (205 + (px-120)*0.154, 618 + (py-565)*0.154) (calibrada con P16 y P18 del plano oficial).
+Pabellon A (con Aula Magna), pisos 1 a 5, a partir de las placas EV-M-01.
+Oval oeste (Aula Magna), hall con la escalera 1, bloque central de 4 aulas sobre el cruce de circulacion E-O y
+circulacion N-S al este con la escalera 2. No tiene ascensor: solo el piso 1 es accesible.
+Conversion placa->plano: (205 + (px-120)*0.154, 618 + (py-565)*0.154), calibrada con P16 y P18.
 """
 import math
 
@@ -94,14 +89,12 @@ def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc)
                 return ew[min(range(n_ew), key=lambda k: abs(ew_x[k] - c))]
             return ns_ids[min(ys, key=lambda y: abs(y - c))]
 
-        # escaleras
         G.nodo(f"{pre}esc1", *cp(490, 700), z, p, "A", "escalera", "Escalera 1")
         G.arista(ew[0], f"{pre}esc1", "pasillo")
         G.nodo(f"{pre}esc2", *cp(1160, 345), z, p, "A", "escalera", "Escalera 2")
         G.arista(ns_ids[min(ys)], f"{pre}esc2", "pasillo")
         anc[(p, 1)] = f"{pre}esc1"
         anc[(p, 2)] = f"{pre}esc2"
-        # salas con puerta
         for n, etq, sala, pu, donde in _aulas(p):
             puertas.poner_sala(G, ancla(donde), f"{pre}{n}", etq, cp(*sala), z, p, "A", puerta_xy=cp(*pu))
         for n, etq, sala, pu in OVALO.get(p, []):
@@ -109,7 +102,6 @@ def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc)
     for p in range(1, sp["pisos"]):
         for s in (1, 2):
             G.arista(anc[(p, s)], anc[(p + 1, s)], "escalera", acc=False, w=alto_piso * costo_esc)
-    # --- entradas desde el exterior (piso 1)
     def con_puerta(ext, ancla_id, etq, nota):
         a, b = G.nodos[ext], G.nodos[ancla_id]
         pid = f"A1_puerta_{ext}"

@@ -37,7 +37,6 @@ def main():
     nodosI = [n for n in G.nodos.values() if n["pab"] == "I"]
     aristasI = [e for e in G.aristas if G.nodos[e["a"]]["pab"] == "I" and G.nodos[e["b"]]["pab"] == "I"]
 
-    # ---- 3D
     a3 = fig.add_axes([0.0, 0.03, 0.30, 0.9], projection="3d")
     for e in aristasI:
         A, B = G.nodos[e["a"]], G.nodos[e["b"]]
@@ -53,7 +52,6 @@ def main():
     for p in range(1, 8):
         a3.text(min(n["x"] for n in nodosI) - 8, -min(n["y"] for n in nodosI), (p - 1) * 3.5 * ZE, f"p{p}", fontsize=8)
 
-    # ---- 2D por piso
     xs = [n["x_px"] for n in nodosI]
     ys = [n["y_px"] for n in nodosI]
     for p in range(1, 8):

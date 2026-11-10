@@ -1,17 +1,10 @@
 """
-Pabellon I - BIBLIOTECA, modelado en detalle (pisos 1 a 7), a partir de las placas
-"Rutas de evacuacion" / "Mapa de riesgos" (EV-M-08 / MR-M-08, 2020-2021; riesgos p2 de 2025).
+Pabellon I - Biblioteca, pisos 1 a 7, a partir de las placas de evacuacion y mapa de riesgos.
 
-Estructura que se repite en todos los pisos (placas con el norte arriba):
-  * Torre circular: anillo de circulacion (24 nodos) + anillo interior (12 nodos, borde del vacio central
-    o del grupo de cubiculos) unidos por radios.  Centro solo en p1, p2, p6 y p7 (en p3-p5 es vacio).
-  * Anexo rectangular al NORTE: pasillo E-O con Escalera 1 (oeste, grande), SSHH, data/com, salas
-    por piso y Escalera 2 (noreste).
-  * HALL DE ASCENSORES al oeste-noroeste con 2 torres de ascensor (2 ascensores): une el anexo y el anillo.
-  * Entrada accesible del campus (P23) al anillo del piso 1, lado este.
-
-Coordenadas: (u,v) normalizadas con R = radio exterior (65 px del plano del campus); centro (122,628).
-Numeracion de los cubiculos: secuencial segun las placas; puede diferir en 1-2 numeros (marcada "aprox").
+Cada piso tiene una torre circular (anillo de circulacion + anillo interior unidos por radios; centro solo en
+p1, p2, p6 y p7), un anexo rectangular al norte con sus escaleras, un hall con 2 torres de ascensor y la entrada
+accesible P23 por el este. Coordenadas (u,v) normalizadas con R = 65 px del plano, centro (122,628).
+Los cubiculos marcados "(aprox)" pueden diferir en 1-2 numeros de las placas.
 """
 import math
 
@@ -23,7 +16,6 @@ R_ANILLO, R_INTERIOR = 0.68, 0.42     # fracciones de R
 V_ANEXO = -1.07                       # y del pasillo del anexo (en R)
 U_ANEXO = (-0.95, 0.95)
 
-# ---- habitaciones por piso --------------------------------------------------------------
 # ("anillo"|"interior"|"anexo"|"centro", etiqueta, angulo_grados | u, dv_anexo)
 # angulos: y hacia abajo, 0 = este, 90 = sur, 180 = oeste, 270 = norte
 SALAS = {1: [
@@ -105,13 +97,11 @@ def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc)
     for piso in range(1, sp["pisos"] + 1):
         z = base_z + (piso - 1) * alto_piso
         pre = f"I{piso}_"
-        # anillo de circulacion
         for k in range(N_ANILLO):
             x, y = _pol(360 * k / N_ANILLO, R_ANILLO)
             G.nodo(f"{pre}o{k:02d}", x, y, z, piso, "I", "pasillo")
         for k in range(N_ANILLO):
             G.arista(f"{pre}o{k:02d}", f"{pre}o{(k + 1) % N_ANILLO:02d}", "pasillo")
-        # anillo interior + radios
         for k in range(N_INTERIOR):
             x, y = _pol(360 * k / N_INTERIOR, R_INTERIOR)
             G.nodo(f"{pre}n{k:02d}", x, y, z, piso, "I", "pasillo")
@@ -122,22 +112,18 @@ def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc)
             G.nodo(f"{pre}centro", CX, CY, z, piso, "I", "pasillo", "centro")
             for k in range(0, N_INTERIOR, 3):
                 G.arista(f"{pre}centro", f"{pre}n{k:02d}", "pasillo")
-        # pasillo del anexo
         for k, (x, y) in enumerate(anexo_pts):
             G.nodo(f"{pre}a{k:02d}", x, y, z, piso, "I", "pasillo")
         for k in range(n_anexo - 1):
             G.arista(f"{pre}a{k:02d}", f"{pre}a{k + 1:02d}", "pasillo")
-        # uniones anexo <-> anillo (norte, noroeste, noreste)
         G.arista(f"{pre}a{k_anexo(-0.05):02d}", f"{pre}o{18:02d}", "pasillo")
         G.arista(f"{pre}a{k_anexo(-0.62):02d}", f"{pre}o{17:02d}", "pasillo")
         G.arista(f"{pre}a{k_anexo(0.7):02d}", f"{pre}o{20:02d}", "pasillo")
-        # escaleras (E1 oeste grande, E2 noreste)
         for s, u in ((1, -0.87), (2, 0.96)):
             x, y = anexo_pts[k_anexo(u)]
             G.nodo(f"{pre}esc{s}", x, y - 9, z, piso, "I", "escalera", f"Escalera {s}")
             G.arista(f"{pre}a{k_anexo(u):02d}", f"{pre}esc{s}", "pasillo")
             anc[(piso, f"esc{s}")] = f"{pre}esc{s}"
-        # hall de ascensores + 2 torres
         hx, hy = CX - 1.0 * R, CY - 0.6 * R
         G.nodo(f"{pre}hall", hx, hy, z, piso, "I", "pasillo", "Hall de ascensores")
         G.nodo(f"{pre}asc1", CX - 1.25 * R, CY - 0.8 * R, z, piso, "I", "ascensor", "Ascensor 1 (I)")
@@ -148,7 +134,6 @@ def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc)
         G.arista(f"{pre}hall", f"{pre}o{14:02d}", "pasillo")
         anc[(piso, "asc1")] = f"{pre}asc1"
         anc[(piso, "asc2")] = f"{pre}asc2"
-        # salas / zonas
         usados = set()
         for tipo, etq, a, dv in SALAS[piso]:
             zid = f"{pre}Z{len(usados):02d}"
@@ -171,7 +156,6 @@ def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc)
             abierta = etq.startswith(("Hall", "Sala de lectura", "Mediateca", "Modulo", "Counter", "Fotocopia auto",
                                       "Control", "Terraza", "Estante", "Libreria"))
             puertas.poner_sala(G, ancla, zid, etq, (x, y), z, piso, "I", puerta=not abierta)
-    # verticales
     for piso in range(1, sp["pisos"]):
         for s in ("esc1", "esc2"):
             G.arista(anc[(piso, s)], anc[(piso + 1, s)], "escalera", acc=False, w=alto_piso * costo_esc)
