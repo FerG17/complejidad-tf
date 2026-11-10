@@ -2,166 +2,339 @@
 Navegacion accesible en el Campus Monterrico (UPC) - Equipo 10 - 1ACC0184 Complejidad Algoritmica
 Grafo 3D (exterior + pabellones por piso), BFS (conectividad) y A* (ruta optima) animados en tiempo real.
 
-Uso:   python app.py            -> abre la ventana interactiva
-       python app.py --prueba   -> genera capturas PNG de un escenario de ejemplo (sin ventana)
+Uso:   python app.py                       -> abre la ventana interactiva
+       python app.py --prueba [--salida D] -> escenario de ejemplo que guarda capturas PNG (abre la ventana unos segundos)
 
 Controles:
-  Barra lateral izquierda: escribe el nombre en Origen / Destino (ej. "cub 54", "aula a-34", "sshh i p3", "kata");
-  aparecen sugerencias: clic en una para elegirla (Enter = la primera).
-  O clic izquierdo en el plano = ORIGEN, clic derecho = DESTINO.
+  Panel izquierdo: escribe en Origen / Destino ("salon 51", "e 51", "cub 54", "bano piso 3", "labs computo c")
+  o filtra por pabellon y piso, y haz clic en un resultado (Enter = el primero).
+  Plano 2D: clic izquierdo = ORIGEN, clic derecho = DESTINO sobre el piso que se muestra.
   Iniciar (espacio)   Barrera tramo (b)   Ascensor fuera (a)   Reiniciar (r)
-  Vista 3D: Auto (sigue la ruta) / Campus completo / un pabellon;  'Ver piso' filtra un piso.
+  3D: arrastrar = rotar, rueda = zoom, boton central o Ctrl+arrastrar = mover.
 """
 import sys
 from pathlib import Path
 
-import matplotlib
-if "--prueba" in sys.argv:
-    matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Button, CheckButtons, RadioButtons, Slider, TextBox
+import pyqtgraph as pg
+from PySide6 import QtCore, QtGui, QtWidgets
 
 import algoritmos as alg
+import ascensores
 import buscador
 import generador
 from simulador import Simulador
-from vista import Vista
+from vista import COL_ASC, COL_ESC, COL_PISO, Vista
 
 CARPETA = Path(__file__).resolve().parent
-NSUG = 6
+MAX_RESULTADOS = 150
+INTERVALO_MS = 30
 
 
-class App:
+class App(QtWidgets.QMainWindow):
     def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Campus Monterrico - rutas accesibles 3D (A*)")
         self.G = generador.construir()
         self.sim = Simulador(self.G)
-        self.fig = plt.figure(figsize=(16, 8.8))
-        if getattr(self.fig.canvas, "manager", None):
-            self.fig.canvas.manager.set_window_title("Campus Monterrico - rutas accesibles 3D (A*)")
-        self.vista = Vista(self.G, str(CARPETA / "plano.png"), self.fig)
-        self.piso_o = self.piso_d = 1
-        self._rol_sug = "origen"
-        self._sug_ids = []
-        self._widgets()
-        self.fig.canvas.mpl_connect("button_press_event", self._clic)
-        self.fig.canvas.mpl_connect("key_press_event", self._tecla)
-        self.timer = self.fig.canvas.new_timer(interval=40)
-        self.timer.add_callback(self.tick)
+        self.vista = Vista(self.G, str(CARPETA / "plano.png"))
+        self.vista.clic.connect(self._clic_plano)
+        self.retos = ascensores.retos(self.G)
+        self._rol = "origen"
+        self._construir_ui()
+        self.timer = QtCore.QTimer(self)
+        self.timer.setInterval(INTERVALO_MS)
+        self.timer.timeout.connect(self.tick)
         self.timer.start()
-        self.vista.actualizar(self.sim)
-
-    # ------------------------------------------------------------ widgets
-    def _widgets(self):
-        f = self.fig
-        f.text(0.012, 0.975, "BUSCAR POR NOMBRE", fontsize=9.5, fontweight="bold", va="center")
-        self.tb_o = TextBox(f.add_axes([0.065, 0.925, 0.135, 0.035]), "Origen ", textalignment="left")
-        self.tb_d = TextBox(f.add_axes([0.065, 0.882, 0.135, 0.035]), "Destino ", textalignment="left")
-        self.tb_o.on_submit(lambda t: self.buscar("origen", t))
-        self.tb_d.on_submit(lambda t: self.buscar("destino", t))
-        self.tb_o.on_text_change(lambda t: self._sugerir("origen", t))
-        self.tb_d.on_text_change(lambda t: self._sugerir("destino", t))
-        f.text(0.012, 0.858, "Sugerencias (clic para elegir):", fontsize=7.5, color="#555", va="center")
-        self.btn_sug = []
-        for k in range(NSUG):
-            b = Button(f.add_axes([0.01, 0.822 - 0.031 * k, 0.19, 0.028]), "", color="#eef3fb", hovercolor="#cfe0f7")
-            b.label.set_fontsize(7.2)
-            b.ax.set_visible(False)
-            b.on_clicked(lambda _e, k=k: self._elegir_sug(k))
-            self.btn_sug.append(b)
-
-        self.chk = CheckButtons(f.add_axes([0.01, 0.595, 0.19, 0.04]), ["Solo ruta accesible"], [True])
-        self.chk.on_clicked(self._toggle_acc)
-        defs = [("Iniciar", self.iniciar, 0.01, 0.53), ("Reiniciar", self.reiniciar, 0.105, 0.53),
-                ("Barrera\nen el tramo", self.sim_barrera, 0.01, 0.465),
-                ("Ascensor fuera\nde servicio", self.sim_asc, 0.105, 0.465),
-                ("Ejemplo", self.ejemplo, 0.01, 0.41)]
-        self.btns = []
-        for txt, fn, x, y in defs:
-            w, h = (0.095, 0.055) if "\n" in txt or txt in ("Iniciar", "Reiniciar") else (0.19, 0.045)
-            b = Button(f.add_axes([x, y, w - 0.005, h]), txt)
-            b.label.set_fontsize(8.5)
-            b.on_clicked(lambda _e, fn=fn: fn())
-            self.btns.append(b)
-
-        self.s_po = Slider(f.add_axes([0.075, 0.365, 0.12, 0.018]), "Piso origen", 1, 7, valinit=1, valstep=1)
-        self.s_pd = Slider(f.add_axes([0.075, 0.335, 0.12, 0.018]), "Piso destino", 1, 7, valinit=1, valstep=1)
-        self.s_v = Slider(f.add_axes([0.075, 0.305, 0.12, 0.018]), "Velocidad", 1, 30, valinit=8, valstep=1)
-        self.s_ver = Slider(f.add_axes([0.075, 0.275, 0.12, 0.018]), "Ver piso 3D", 0, 7, valinit=0, valstep=1)
-        for s in (self.s_po, self.s_pd, self.s_v, self.s_ver):
-            s.label.set_fontsize(8)
-            s.valtext.set_fontsize(8)
-        self.s_po.on_changed(lambda v: setattr(self, "piso_o", int(v)))
-        self.s_pd.on_changed(lambda v: setattr(self, "piso_d", int(v)))
-        self.s_ver.on_changed(self._cambia_piso_ver)
-        f.text(0.012, 0.250, "(Ver piso 3D: 0 = todos los pisos)", fontsize=7, color="#666", va="center")
-
-        f.text(0.012, 0.222, "VISTA 3D", fontsize=9.5, fontweight="bold", va="center")
-        self._modos = ["Auto"] + ["Campus"] + list(self.vista.pabs)
-        etiquetas = ["Auto (sigue la ruta)", "Campus completo"] + [f"Pabellon {p}" for p in self.vista.pabs]
-        self.radio = RadioButtons(f.add_axes([0.01, 0.015, 0.19, 0.195], facecolor="#f6f6f6"), etiquetas, active=0)
-        for lab in self.radio.labels:
-            lab.set_fontsize(8)
-        self.radio.on_clicked(lambda lab: self._cambia_modo(etiquetas.index(lab)))
-
-    def _cambia_modo(self, idx):
-        self.vista.modo = self._modos[idx]
         self._refrescar()
 
-    def _cambia_piso_ver(self, v):
-        self.vista.piso_ver = int(v)
+    def _construir_ui(self):
+        centro = QtWidgets.QWidget()
+        self.setCentralWidget(centro)
+        raiz = QtWidgets.QHBoxLayout(centro)
+        raiz.setContentsMargins(8, 8, 8, 8)
+        raiz.addWidget(self._panel_lateral())
+        medio = QtWidgets.QVBoxLayout()
+        medio.setContentsMargins(0, 0, 0, 0)
+        medio.addWidget(self.vista.w2d)
+        self.lbl_msg = QtWidgets.QLabel()
+        self.lbl_msg.setWordWrap(True)
+        self.lbl_msg.setStyleSheet("font-size: 13px; font-weight: 600; color: #111;")
+        self.lbl_info = QtWidgets.QLabel()
+        self.lbl_info.setWordWrap(True)
+        self.lbl_info.setStyleSheet("font-size: 12px; color: #333;")
+        medio.addWidget(self.lbl_msg)
+        medio.addWidget(self.lbl_info)
+        tabs = QtWidgets.QTabWidget()
+        tabs.addTab(self._grupo_vista(), "Vista")
+        tabs.addTab(self._grupo_ascensores(), "Ascensores y retos")
+        medio.addWidget(tabs)
+        medio.addWidget(self._leyenda())
+        medio.addStretch(1)
+        col = QtWidgets.QWidget()
+        col.setLayout(medio)
+        col.setMinimumWidth(520)
+        raiz.addWidget(col, 5)
+        raiz.addWidget(self.vista.w3d, 6)
+        for tecla, fn in (("Space", self.iniciar), ("B", self.sim_barrera), ("A", self.sim_asc), ("R", self.reiniciar)):
+            QtGui.QShortcut(QtGui.QKeySequence(tecla), self, activated=fn)
+
+    def _panel_lateral(self):
+        panel = QtWidgets.QWidget()
+        panel.setFixedWidth(360)
+        lay = QtWidgets.QVBoxLayout(panel)
+        lay.setContentsMargins(0, 0, 0, 0)
+
+        g = QtWidgets.QGroupBox("Buscar origen y destino")
+        gl_ = QtWidgets.QVBoxLayout(g)
+        self.le_o = QtWidgets.QLineEdit()
+        self.le_o.setPlaceholderText("Origen: ej. entrada alonso")
+        self.le_d = QtWidgets.QLineEdit()
+        self.le_d.setPlaceholderText("Destino: ej. salon 51, cub 54, bano")
+        for le in (self.le_o, self.le_d):
+            le.setClearButtonEnabled(True)
+            le.textEdited.connect(self._buscar)
+            le.returnPressed.connect(self._elegir_primero)
+            le.installEventFilter(self)
+            gl_.addWidget(le)
+        fila = QtWidgets.QHBoxLayout()
+        self.cb_pab = QtWidgets.QComboBox()
+        self.cb_pab.addItem("Todos los pabellones", None)
+        for p in self.vista.pabs:
+            self.cb_pab.addItem("Biblioteca (I)" if p == "I" else f"Pabellon {p}", p)
+        self.cb_piso = QtWidgets.QComboBox()
+        self.cb_piso.addItem("Todos los pisos", None)
+        for k in range(1, 8):
+            self.cb_piso.addItem(f"Piso {k}", k)
+        for cb in (self.cb_pab, self.cb_piso):
+            cb.currentIndexChanged.connect(self._buscar)
+            fila.addWidget(cb)
+        gl_.addLayout(fila)
+        self.lbl_res = QtWidgets.QLabel()
+        self.lbl_res.setStyleSheet("color: #555; font-size: 11px;")
+        gl_.addWidget(self.lbl_res)
+        self.lista = QtWidgets.QListWidget()
+        self.lista.setMinimumHeight(190)
+        self.lista.itemClicked.connect(self._elegir_item)
+        gl_.addWidget(self.lista, 1)
+        lay.addWidget(g, 1)
+
+        self.chk = QtWidgets.QCheckBox("Solo ruta accesible")
+        self.chk.setChecked(True)
+        self.chk.toggled.connect(self._toggle_acc)
+        lay.addWidget(self.chk)
+        grid = QtWidgets.QGridLayout()
+        for k, (txt, fn) in enumerate((("Iniciar (espacio)", self.iniciar), ("Reiniciar (r)", self.reiniciar),
+                                       ("Barrera en el tramo (b)", self.sim_barrera),
+                                       ("Ascensor fuera de servicio (a)", self.sim_asc))):
+            b = QtWidgets.QPushButton(txt)
+            b.setFocusPolicy(QtCore.Qt.NoFocus)
+            b.clicked.connect(lambda _c=False, fn=fn: fn())
+            grid.addWidget(b, k // 2, k % 2)
+        b = QtWidgets.QPushButton("Ejemplo")
+        b.setFocusPolicy(QtCore.Qt.NoFocus)
+        b.clicked.connect(self.ejemplo)
+        grid.addWidget(b, 2, 0, 1, 2)
+        lay.addLayout(grid)
+        vel = QtWidgets.QHBoxLayout()
+        vel.addWidget(QtWidgets.QLabel("Velocidad"))
+        self.s_v = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.s_v.setRange(1, 30)
+        self.s_v.setValue(8)
+        vel.addWidget(self.s_v, 1)
+        lay.addLayout(vel)
+        return panel
+
+    def _grupo_vista(self):
+        v = QtWidgets.QWidget()
+        form = QtWidgets.QFormLayout(v)
+        self.cb_modo = QtWidgets.QComboBox()
+        self.cb_modo.addItem("Auto (sigue la ruta)", "Auto")
+        self.cb_modo.addItem("Campus completo", "Campus")
+        for p in self.vista.pabs:
+            self.cb_modo.addItem("Biblioteca (I)" if p == "I" else f"Pabellon {p}", p)
+        self.cb_modo.currentIndexChanged.connect(self._cambia_modo)
+        self.cb_ver = QtWidgets.QComboBox()
+        self.cb_ver.addItem("Todos", 0)
+        for k in range(1, 8):
+            self.cb_ver.addItem(f"Piso {k}", k)
+        self.cb_ver.currentIndexChanged.connect(self._cambia_piso_ver)
+        self.cb_plano = QtWidgets.QComboBox()
+        for k in range(1, 8):
+            self.cb_plano.addItem(f"Piso {k}", k)
+        self.cb_plano.currentIndexChanged.connect(self._cambia_piso_plano)
+        self.chk_seguir = QtWidgets.QCheckBox("El plano sigue al caminante")
+        self.chk_seguir.setChecked(True)
+        form.addRow("Vista 3D:", self.cb_modo)
+        form.addRow("Piso en 3D:", self.cb_ver)
+        form.addRow("Piso en el plano:", self.cb_plano)
+        self.chk_muros = QtWidgets.QCheckBox("Muros de los edificios en el 3D")
+        self.chk_muros.setChecked(True)
+        self.chk_muros.toggled.connect(self._toggle_muros)
+        form.addRow(self.chk_seguir)
+        form.addRow(self.chk_muros)
+        return v
+
+    def _grupo_ascensores(self):
+        g = QtWidgets.QWidget()
+        lay = QtWidgets.QVBoxLayout(g)
+        fila = QtWidgets.QHBoxLayout()
+        self.cb_reto = QtWidgets.QComboBox()
+        for r in self.retos:
+            self.cb_reto.addItem(r["titulo"])
+        self.cb_reto.currentIndexChanged.connect(self._muestra_reto)
+        b = QtWidgets.QPushButton("Cargar reto")
+        b.setFocusPolicy(QtCore.Qt.NoFocus)
+        b.clicked.connect(self.cargar_reto)
+        fila.addWidget(self.cb_reto, 1)
+        fila.addWidget(b)
+        lay.addLayout(fila)
+        self.lbl_reto = QtWidgets.QLabel()
+        self.lbl_reto.setWordWrap(True)
+        self.lbl_reto.setStyleSheet("color: #555; font-size: 11px;")
+        lay.addWidget(self.lbl_reto)
+        lay.addWidget(QtWidgets.QLabel("Marca un ascensor para sacarlo de servicio:"))
+        grid = QtWidgets.QGridLayout()
+        self.chk_asc = {}
+        for k, a in enumerate(self.sim.catalogo):
+            c = QtWidgets.QCheckBox(a["nombre"])
+            c.setFocusPolicy(QtCore.Qt.NoFocus)
+            c.toggled.connect(lambda estado, clave=a["clave"]: self._toggle_asc(clave, estado))
+            self.chk_asc[a["clave"]] = c
+            grid.addWidget(c, k // 3, k % 3)
+        lay.addLayout(grid)
+        self.lbl_aislados = QtWidgets.QLabel()
+        self.lbl_aislados.setWordWrap(True)
+        self.lbl_aislados.setStyleSheet("font-size: 12px; color: #7a1f1f;")
+        lay.addWidget(self.lbl_aislados)
+        self._muestra_reto()
+        self._actualizar_aislados()
+        return g
+
+    def _actualizar_aislados(self):
+        s = self.sim
+        t = f"Siempre sin ruta accesible (sin ascensor propio): {ascensores.texto_pisos(s.sin_acceso_base)}."
+        if s.fuera:
+            extra = s.sin_acceso_por_fuera()
+            t += f"\nPor los ascensores fuera de servicio: {ascensores.texto_pisos(extra) if extra else 'ninguno (hay otro camino)'}."
+        self.lbl_aislados.setText(t)
+
+    def _muestra_reto(self, *_):
+        self.lbl_reto.setText(self.retos[self.cb_reto.currentIndex()]["nota"])
+
+    def _toggle_asc(self, clave, estado):
+        self.sim.poner_ascensor(clave, estado)
+        self._actualizar_aislados()
         self._refrescar()
 
-    def _toggle_acc(self, _label):
-        self.sim.solo_acc = self.chk.get_status()[0]
+    def _sync_ascensores(self):
+        for clave, c in self.chk_asc.items():
+            c.blockSignals(True)
+            c.setChecked(any(i in self.sim.fuera for i in self.sim.asc_clave[clave]["nodos"]))
+            c.blockSignals(False)
+        self._actualizar_aislados()
+
+    def _toggle_muros(self, estado):
+        self.vista.muros = estado
         self._refrescar()
 
-    # ------------------------------------------------------------ busqueda por nombre
-    def _sugerir(self, rol, texto):
-        self._rol_sug = rol
-        self._sug_ids = buscador.buscar(self.G, texto, n=NSUG) if texto.strip() else []
-        for k, b in enumerate(self.btn_sug):
-            if k < len(self._sug_ids):
-                b.label.set_text(self.G.nodos[self._sug_ids[k]]["nombre"])
-                b.ax.set_visible(True)
-            else:
-                b.ax.set_visible(False)
-        self.fig.canvas.draw_idle()
+    def cargar_reto(self):
+        r = self.retos[self.cb_reto.currentIndex()]
+        self.sim.reiniciar(todo=True)
+        for clave in r["fuera"]:
+            self.sim.poner_ascensor(clave, True)
+        self._sync_ascensores()
+        self.chk.setChecked(True)
+        self._asignar("origen", r["origen"])
+        self._asignar("destino", r["destino"])
+        self.iniciar()
 
-    def _elegir_sug(self, k):
-        if k >= len(self._sug_ids):
+    def _leyenda(self):
+        leyenda = "".join(f"<span style='color:{c}'>&#9632;</span> {i + 1} &nbsp;" for i, c in enumerate(COL_PISO))
+        lbl = QtWidgets.QLabel(
+            f"<small>Pisos: {leyenda}<br><span style='color:{COL_ESC}'>&#9632;</span> escalera (no accesible) &nbsp; "
+            f"<span style='color:{COL_ASC}'>&#9632;</span> ascensor<br>"
+            "<span style='color:#1565c0'>&#9711;</span> origen &nbsp; <span style='color:#c62828'>&#9711;</span> destino "
+            "&nbsp; <span style='color:#e91e8c'>&#9679;</span> caminante<br>"
+            "3D: arrastrar = rotar &nbsp; rueda = zoom &nbsp; boton central o Ctrl+arrastrar = mover</small>")
+        return lbl
+
+    def eventFilter(self, obj, ev):
+        if ev.type() == QtCore.QEvent.FocusIn and obj in (self.le_o, self.le_d):
+            self._rol = "origen" if obj is self.le_o else "destino"
+            self._buscar()
+        return super().eventFilter(obj, ev)
+
+    def _cambia_modo(self, _i):
+        self.vista.modo = self.cb_modo.currentData()
+        self._refrescar()
+
+    def _cambia_piso_ver(self, _i):
+        self.vista.piso_ver = self.cb_ver.currentData()
+        self._refrescar()
+
+    def _cambia_piso_plano(self, _i):
+        self.vista.set_piso_plano(self.cb_plano.currentData())
+        self._refrescar()
+
+    def _toggle_acc(self, estado):
+        self.sim.solo_acc = estado
+        self._refrescar()
+
+    def _buscar(self, *_):
+        le = self.le_o if self._rol == "origen" else self.le_d
+        texto = le.text()
+        pab, piso = self.cb_pab.currentData(), self.cb_piso.currentData()
+        self.lista.clear()
+        if not texto.strip() and pab is None and piso is None:
+            self.lbl_res.setText(f"Eligiendo {self._rol.upper()}: escribe un nombre o elige pabellon / piso.")
             return
-        nid = self._sug_ids[k]
-        self._asignar(self._rol_sug, nid, [])
-        self._sug_ids = []
-        for b in self.btn_sug:
-            b.ax.set_visible(False)
+        ids = buscador.buscar(self.G, texto, n=MAX_RESULTADOS, pab=pab, piso=piso)
+        for i in ids:
+            it = QtWidgets.QListWidgetItem(self.G.nodos[i]["nombre"])
+            it.setData(QtCore.Qt.UserRole, i)
+            self.lista.addItem(it)
+        extra = f" (mostrando {MAX_RESULTADOS})" if len(ids) == MAX_RESULTADOS else ""
+        self.lbl_res.setText(f"Eligiendo {self._rol.upper()}: {len(ids)} resultado(s){extra}" if ids else
+                             f"Eligiendo {self._rol.upper()}: sin resultados. Prueba otra palabra o quita filtros.")
+
+    def _elegir_item(self, item):
+        rol = self._rol
+        self._asignar(rol, item.data(QtCore.Qt.UserRole))
+        if rol == "origen" and not self.sim.destino:
+            self.le_d.setFocus()
+        elif rol == "destino" and not self.sim.origen:
+            self.le_o.setFocus()
         self._refrescar()
 
-    def _asignar(self, rol, nid, otras):
+    def _elegir_primero(self):
+        if self.lista.count():
+            self._elegir_item(self.lista.item(0))
+
+    def _asignar(self, rol, nid):
         if self.sim.estado in ("buscando", "caminando"):
             self.sim.reiniciar(todo=False)
         setattr(self.sim, rol, nid)
-        tb = self.tb_o if rol == "origen" else self.tb_d
-        if tb.text != self.G.nodos[nid]["nombre"]:
-            tb.eventson = False
-            tb.set_val(self.G.nodos[nid]["nombre"])
-            tb.eventson = True
-        extra = "; ".join(self.G.nodos[i]["nombre"] for i in otras[:3])
-        self.sim.msg = (f"{rol.capitalize()}: {self.G.nodos[nid]['nombre']}"
-                        + (f"   (otras coincidencias: {extra})" if extra else "") + ".  Pulsa Iniciar.")
+        le = self.le_o if rol == "origen" else self.le_d
+        le.setText(self.G.nodos[nid]["nombre"])
+        le.setCursorPosition(0)
+        piso = self.G.nodos[nid]["piso"]
+        if piso >= 1:
+            self.cb_plano.setCurrentIndex(piso - 1)
+        self.sim.msg = f"{rol.capitalize()}: {self.G.nodos[nid]['nombre']}.  Pulsa Iniciar (espacio)."
 
     def buscar(self, rol, texto):
-        """Enter en la caja: elige la primera coincidencia."""
-        if not texto.strip():
-            return
         r = buscador.buscar(self.G, texto)
         if not r:
-            self.sim.msg = f"No encontre '{texto}'. Prueba: 'cub 54', 'aula a-34', 'ascensor J', 'kata', 'entrada primavera'."
+            self.sim.msg = f"No encontre '{texto}'. Prueba: 'salon 51', 'cub 54', 'bano', 'ascensor J', 'kata'."
         else:
-            self._asignar(rol, r[0], r[1:])
+            self._asignar(rol, r[0])
         self._refrescar()
 
-    # ------------------------------------------------------------ acciones
+    def _clic_plano(self, rol, nid):
+        self._asignar(rol, nid)
+        self.sim.msg += "  Origen/destino actualizado."
+        self._refrescar()
+
     def iniciar(self):
         self.sim.iniciar()
         self._refrescar()
@@ -172,99 +345,119 @@ class App:
 
     def sim_asc(self):
         self.sim.ascensor_fuera()
+        self._sync_ascensores()
         self._refrescar()
 
     def reiniciar(self):
         self.sim.reiniciar(todo=True)
+        self.le_o.clear()
+        self.le_d.clear()
+        self._sync_ascensores()
         self._refrescar()
 
     def ejemplo(self):
         op = generador.opciones_destino(self.G)
         self.sim.reiniciar(todo=True)
-        self.sim.origen = op["Entrada Av. Alonso de Molina"]
-        self.sim.destino = op["Pabellon H - piso 3"]
+        self._sync_ascensores()
+        self._asignar("origen", op["Entrada Av. Alonso de Molina"])
+        self._asignar("destino", op["Pabellon H - piso 3"])
         self.iniciar()
 
     def _refrescar(self):
-        self.vista.refrescar(self.sim)
+        self.vista.actualizar(self.sim)
+        N, s = self.G.nodos, self.sim
+        modo = "SOLO ACCESIBLE" if s.solo_acc else "TODAS LAS RUTAS (con escaleras)"
+        piso_w = f"   |   piso del caminante: {self.vista.piso_caminante}" if self.vista.piso_caminante else ""
+        self.lbl_msg.setText(s.msg)
+        self.lbl_info.setText(
+            f"Origen: {N[s.origen]['nombre'] if s.origen else '-'}    Destino: {N[s.destino]['nombre'] if s.destino else '-'}"
+            f"    Modo: {modo}\nNodos expandidos por A*: {s.n_exp}   |   recorrido: {s.distancia_recorrida():.0f} m"
+            f"   |   recalculos: {s.recalculos}{piso_w}")
 
-    # ------------------------------------------------------------ eventos
     def tick(self):
-        v = int(self.s_v.val)
+        v = self.s_v.value()
         if self.sim.tick(pasos_busqueda=v, dt=0.045, mult=v / 2.0):
-            self.vista.refrescar(self.sim)
+            if self.chk_seguir.isChecked() and self.sim.estado == "caminando":
+                f = self.vista.piso_nodo_caminante(self.sim)
+                if f and f >= 1 and f != self.vista.piso_plano:
+                    self.cb_plano.setCurrentIndex(f - 1)
+            self._refrescar()
 
-    def _tecla(self, ev):
-        if self.tb_o.capturekeystrokes or self.tb_d.capturekeystrokes:
-            return    # se esta escribiendo en una caja de texto
-        acciones = {" ": self.iniciar, "b": self.sim_barrera, "a": self.sim_asc, "r": self.reiniciar}
-        if ev.key in acciones:
-            acciones[ev.key]()
-
-    def _clic(self, ev):
-        if ev.inaxes is not self.vista.ax2 or ev.xdata is None:
-            return
-        tb = getattr(self.fig.canvas, "toolbar", None)
-        if tb is not None and getattr(tb, "mode", ""):
-            return   # zoom/pan activo
-        if ev.button not in (1, 3):
-            return
-        nodo = self.elegir_nodo(ev.xdata, ev.ydata, self.piso_o if ev.button == 1 else self.piso_d)
-        if nodo is None:
-            return
-        self._asignar("origen" if ev.button == 1 else "destino", nodo, [])
-        self.sim.msg = "Origen/destino actualizado. Pulsa Iniciar (espacio)."
+    def capturar(self, ruta):
         self._refrescar()
+        for _ in range(4):
+            QtWidgets.QApplication.processEvents()
+        self.grab().save(str(ruta))
 
-    def elegir_nodo(self, x, y, piso):
-        cand = [n for n in self.G.nodos.values() if n["piso"] <= 1]
-        n0 = min(cand, key=lambda n: (n["x_px"] - x) ** 2 + (n["y_px"] - y) ** 2)
-        if (n0["x_px"] - x) ** 2 + (n0["y_px"] - y) ** 2 > 35 ** 2:
-            return None
-        if not n0["pab"]:
-            return n0["id"]
-        piso = min(piso, generador.PAB[n0["pab"]]["pisos"])
-        if piso == 1:
-            return n0["id"]
-        c = [n for n in self.G.piso_nodos(n0["pab"], piso) if n["tipo"] == "pasillo"]
-        return min(c, key=lambda n: (n["x_px"] - n0["x_px"]) ** 2 + (n["y_px"] - n0["y_px"]) ** 2)["id"]
+    def closeEvent(self, ev):
+        self.timer.stop()
+        super().closeEvent(ev)
 
 
-def prueba():
-    """Escenario de ejemplo sin ventana: guarda capturas en la carpeta capturas/."""
-    app = App()
-    app.timer.stop()
-    out = CARPETA / "capturas"
-    out.mkdir(exist_ok=True)
-    app.buscar("origen", "entrada alonso")
-    app.buscar("destino", "cub 54")
-    print(app.sim.msg)
-    app.iniciar()
+def preparar(app):
+    app.setStyle("Fusion")
+    app.styleHints().setColorScheme(QtCore.Qt.ColorScheme.Light)
+    pal = QtGui.QPalette()
+    for rol, col in ((QtGui.QPalette.Window, "#f3f4f6"), (QtGui.QPalette.WindowText, "#111111"),
+                     (QtGui.QPalette.Base, "#ffffff"), (QtGui.QPalette.AlternateBase, "#f3f4f6"),
+                     (QtGui.QPalette.Text, "#111111"), (QtGui.QPalette.Button, "#e5e7eb"),
+                     (QtGui.QPalette.ButtonText, "#111111"), (QtGui.QPalette.Highlight, "#2563eb"),
+                     (QtGui.QPalette.HighlightedText, "#ffffff"), (QtGui.QPalette.PlaceholderText, "#7a7f87")):
+        pal.setColor(rol, QtGui.QColor(col))
+    app.setPalette(pal)
+    pg.setConfigOptions(antialias=True)
+
+
+def prueba(salida):
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
+    preparar(app)
+    w = App()
+    w.timer.stop()
+    w.resize(1650, 940)
+    w.show()
+    for _ in range(6):
+        app.processEvents()
+    salida.mkdir(parents=True, exist_ok=True)
+    w.buscar("origen", "entrada alonso")
+    w.buscar("destino", "cub 54")
+    w.cb_plano.setCurrentIndex(0)
+    print(w.sim.msg)
+    w.iniciar()
     for _ in range(12):
-        app.sim.tick(pasos_busqueda=20)
-    app.vista.actualizar(app.sim)
-    app.vista.guardar(out / "1_busqueda_A_estrella.png")
-    while app.sim.estado == "buscando":
-        app.sim.tick(pasos_busqueda=20)
-    while app.sim.estado == "caminando":      # caminar hasta un tramo con desvio posible
-        i = app.sim.walker_i
-        a, b = app.sim.ruta[i], app.sim.ruta[i + 1]
-        if i > 3 and alg.bfs_alcanzable(app.G, a, app.sim.destino, True, frozenset(), frozenset({(a, b)})):
+        w.sim.tick(pasos_busqueda=20)
+    w.capturar(salida / "1_busqueda_A_estrella.png")
+    while w.sim.estado == "buscando":
+        w.sim.tick(pasos_busqueda=20)
+    while w.sim.estado == "caminando":
+        i = w.sim.walker_i
+        a, b = w.sim.ruta[i], w.sim.ruta[i + 1]
+        if i > 3 and alg.bfs_alcanzable(w.G, a, w.sim.destino, True, frozenset(), frozenset({(a, b)})):
             break
-        app.sim.tick(dt=0.045, mult=6)
-    app.sim.barrera_tramo()
-    while app.sim.estado == "buscando":
-        app.sim.tick(pasos_busqueda=40)
+        w.sim.tick(dt=0.045, mult=6)
+    w.sim_barrera()
+    while w.sim.estado == "buscando":
+        w.sim.tick(pasos_busqueda=40)
     for _ in range(30):
-        app.sim.tick(dt=0.045, mult=6)
-    app.vista.actualizar(app.sim)
-    app.vista.guardar(out / "2_recorrido_con_barrera.png")
-    print("Capturas en", out, "| estado:", app.sim.estado, "| recalculos:", app.sim.recalculos)
+        w.sim.tick(dt=0.045, mult=6)
+    w.capturar(salida / "2_recorrido_con_barrera.png")
+    print("Capturas en", salida, "| estado:", w.sim.estado, "| recalculos:", w.sim.recalculos)
+    w.close()
+
+
+def main():
+    if "--prueba" in sys.argv:
+        salida = CARPETA / "capturas"
+        if "--salida" in sys.argv:
+            salida = Path(sys.argv[sys.argv.index("--salida") + 1])
+        prueba(salida)
+        return
+    app = QtWidgets.QApplication(sys.argv)
+    preparar(app)
+    w = App()
+    w.resize(1650, 940)
+    w.show()
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
-    if "--prueba" in sys.argv:
-        prueba()
-    else:
-        App()
-        plt.show()
+    main()

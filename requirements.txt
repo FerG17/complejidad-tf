@@ -1,2 +1,5 @@
-matplotlib>=3.7
 numpy
+pyqtgraph>=0.14
+PyOpenGL
+PySide6-Essentials
+matplotlib>=3.7

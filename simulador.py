@@ -3,12 +3,15 @@ Logica de la simulacion (independiente de la ventana, asi se puede probar sin pa
 
 Estados:  idle -> buscando (A* animado) -> caminando (recorrido en tiempo real) -> llego
                          +-> sin_ruta
-Barrera:  mientras camina, se bloquea el siguiente tramo (o el siguiente ascensor) y se
-          recalcula A* desde el nodo actual (el algoritmo se vuelve a animar).
+Barrera:  mientras camina, se bloquea el siguiente tramo y se recalcula A* desde el nodo actual
+          (el algoritmo se vuelve a animar).
+Ascensores fuera de servicio: se pueden marcar en cualquier momento (antes de iniciar o caminando); persisten
+          entre recorridos hasta reiniciar. Si la ruta actual los usa, se recalcula desde el nodo actual.
 """
 import math
 
 import algoritmos as alg
+import ascensores
 
 VEL_M_S = 1.2   # velocidad de recorrido simulada (m/s, ritmo de silla de ruedas)
 
@@ -17,6 +20,11 @@ class Simulador:
     def __init__(self, G):
         self.G = G
         self.solo_acc = True
+        self.catalogo = ascensores.catalogo(G)
+        self.asc_clave = {a["clave"]: a for a in self.catalogo}
+        self.asc_de = {i: a for a in self.catalogo for i in a["nodos"]}
+        self.fuera = set()
+        self.sin_acceso_base = ascensores.pisos_sin_acceso(G, ())
         self.reiniciar(todo=True)
 
     # ------------------------------------------------------------------ estado
@@ -24,6 +32,7 @@ class Simulador:
         if todo:
             self.origen = None
             self.destino = None
+            self.fuera = set()
         self.estado = "idle"
         self.gen = None
         self.expandidos = []
@@ -57,14 +66,31 @@ class Simulador:
         self.expandidos = []
         self.n_exp = 0
         self.ruta = None
-        if not alg.bfs_alcanzable(self.G, desde, self.destino, self.solo_acc, self.nodos_bloq, self.aristas_bloq):
+        bloq = frozenset((self.nodos_bloq | self.fuera) - {desde})
+        if not alg.bfs_alcanzable(self.G, desde, self.destino, self.solo_acc, bloq, self.aristas_bloq):
             self.estado = "sin_ruta"
             self.msg = ("BFS: NO existe ruta " + ("accesible " if self.solo_acc else "") +
-                        "entre esos puntos.")
+                        "entre esos puntos." + self._nota_fuera())
             return
-        self.gen = alg.astar_pasos(self.G, desde, self.destino, self.solo_acc, self.nodos_bloq, self.aristas_bloq)
+        self.gen = alg.astar_pasos(self.G, desde, self.destino, self.solo_acc, bloq, self.aristas_bloq)
         self.estado = "buscando"
         self.msg = "BFS: hay conexion. Buscando la ruta optima con A*..."
+
+    def nombres_fuera(self):
+        return sorted({self.asc_de[i]["nombre"] for i in self.fuera})
+
+    def sin_acceso_por_fuera(self):
+        """Pisos que quedan sin ruta accesible SOLO por los ascensores caidos (descontando A y C, que ya no la tienen)."""
+        actual = ascensores.pisos_sin_acceso(self.G, self.fuera)
+        extra = {p: [x for x in pisos if x not in self.sin_acceso_base.get(p, [])] for p, pisos in actual.items()}
+        return {p: v for p, v in extra.items() if v}
+
+    def _nota_fuera(self):
+        if not self.fuera:
+            return ""
+        extra = self.sin_acceso_por_fuera()
+        resto = f" Sin acceso por eso: {ascensores.texto_pisos(extra)}." if extra else ""
+        return f" Ascensores fuera de servicio: {', '.join(self.nombres_fuera())}.{resto}"
 
     # ------------------------------------------------------------------ tick
     def tick(self, pasos_busqueda=6, dt=0.04, mult=6.0):
@@ -119,18 +145,43 @@ class Simulador:
         if self.estado == "sin_ruta":
             self.msg += " (la barrera dejo el destino aislado)"
 
-    def ascensor_fuera(self):
-        """Pone fuera de servicio el siguiente ascensor de la ruta (si lo hay) y recalcula."""
-        if self.estado != "caminando":
+    def poner_ascensor(self, clave, fuera):
+        """Saca de servicio (o restablece) un ascensor completo. Si la ruta que se esta recorriendo lo usa, recalcula."""
+        a = self.asc_clave[clave]
+        nodos = set(a["nodos"])
+        if not fuera:
+            self.fuera -= nodos
+            self.msg = f"{a['nombre']} restablecido."
             return
+        self.fuera |= nodos
+        if self.estado == "buscando":
+            self._buscar(self.inicio_busqueda)
+            self.msg = f"{a['nombre']} fuera de servicio. " + self.msg
+        elif self.estado == "caminando" and nodos & set(self.ruta[self.walker_i + 1:]):
+            self.recalculos += 1
+            self._buscar(self.ruta[self.walker_i])
+            self.msg = f"{a['nombre']} fuera de servicio. " + self.msg
+        elif self.estado == "caminando":
+            self.msg = f"{a['nombre']} fuera de servicio: la ruta actual no lo usa."
+        else:
+            self.msg = f"{a['nombre']} fuera de servicio. Pulsa Iniciar para ver como cambia la ruta."
+
+    def ascensor_fuera(self):
+        """Saca de servicio el siguiente ascensor que la ruta aun no ha usado (todo el ascensor) y recalcula."""
+        if self.estado == "buscando":
+            self.msg = "A* todavia esta buscando la ruta: pulsa de nuevo cuando empiece a caminar."
+            return
+        if self.estado != "caminando":
+            self.msg = ("Para sacar de servicio el ascensor de la ruta: pulsa Iniciar y, mientras camina, este boton. "
+                        "O marca ascensores en la lista 'Ascensores fuera de servicio'.")
+            return
+        actual = self.asc_de.get(self.ruta[self.walker_i])
         for k in range(self.walker_i + 1, len(self.ruta)):
-            if self.G.nodos[self.ruta[k]]["tipo"] == "ascensor":
-                self.nodos_bloq.add(self.ruta[k])
-                self.recalculos += 1
-                self._buscar(self.ruta[self.walker_i])
-                self.msg = "Ascensor fuera de servicio. " + self.msg
+            a = self.asc_de.get(self.ruta[k])
+            if a and a is not actual and not set(a["nodos"]) <= self.fuera:
+                self.poner_ascensor(a["clave"], True)
                 return
-        self.msg = "La ruta actual no usa ascensores."
+        self.msg = "La ruta actual no pasa por ningun ascensor que siga en servicio."
 
     # ------------------------------------------------------------------ posicion
     def pos_walker(self):

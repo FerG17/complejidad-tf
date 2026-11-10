@@ -3170,5 +3170,10 @@ F2_c24,G2_c00,6.62,pasaje,1,supuesto: F-G continuo (un solo pasillo con su escal
 F3_c24,G3_c00,6.62,pasaje,1,supuesto: F-G continuo (un solo pasillo con su escalera)
 F4_c24,G4_c00,6.62,pasaje,1,supuesto: F-G continuo (un solo pasillo con su escalera)
 F5_c24,G5_c00,6.62,pasaje,1,supuesto: F-G continuo (un solo pasillo con su escalera)
+D1_c04,C1_c04,23.65,pasaje,1,confirmado por el equipo: plataforma plana C-D en los pisos 1 a 5 (en el hueco entre ambos hay escaleras); posicion aproximada en el extremo norte
+D2_c04,C2_c04,23.65,pasaje,1,confirmado por el equipo: plataforma plana C-D en los pisos 1 a 5 (en el hueco entre ambos hay escaleras); posicion aproximada en el extremo norte
+D3_c04,C3_c04,23.65,pasaje,1,confirmado por el equipo: plataforma plana C-D en los pisos 1 a 5 (en el hueco entre ambos hay escaleras); posicion aproximada en el extremo norte
+D4_c04,C4_c04,23.65,pasaje,1,confirmado por el equipo: plataforma plana C-D en los pisos 1 a 5 (en el hueco entre ambos hay escaleras); posicion aproximada en el extremo norte
+D5_c04,C5_c04,23.65,pasaje,1,confirmado por el equipo: plataforma plana C-D en los pisos 1 a 5 (en el hueco entre ambos hay escaleras); posicion aproximada en el extremo norte
 X4,Z_KATA,7.17,peatonal,1,
 L3,Z_GALERIA,5.5,peatonal,1,

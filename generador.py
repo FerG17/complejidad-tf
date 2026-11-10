@@ -11,7 +11,7 @@ Supuestos (marcados en la columna "nota" de aristas.csv para poder corregirlos):
   * ESCALA: 0.275 m/px. Calibrada registrando 9 pabellones del plano contra Google Maps (rotacion ~41 grados) y la
     medicion Primavera-Alonso de Molina = 131.85 m (los extremos caen en los bordes norte y sur del plano). Error ~7 m.
   * BASE_Z: altura del piso 1 de cada pabellon (por ahora 0 en todos; el campus tiene pendiente).
-  * Los pasillos J-B (todos los pisos) y E-F-G (todos los pisos) estan a nivel y son accesibles.
+  * Los pasillos J-B, C-D y E-F-G (todos los pisos) estan a nivel y son accesibles.
   * E-A: solo escaleras (no accesible).
   * Pabellones K y L: NO incluidos todavia (sus entradas siguen como nodos del grafo exterior).
 """
@@ -59,6 +59,8 @@ PASAJES = [
     ("J", 1.0, "B", 0.0, "supuesto: pasillo J-B a nivel en todos los pisos (indicado por el equipo)"),
     ("E", 1.0, "F", 0.0, "supuesto: E-F continuo en todos los pisos"),
     ("F", 1.0, "G", 0.0, "supuesto: F-G continuo (un solo pasillo con su escalera)"),
+    ("D", 0.16, "C", 0.185, "confirmado por el equipo: plataforma plana C-D en los pisos 1 a 5 (en el hueco entre ambos "
+                            "hay escaleras); posicion aproximada en el extremo norte"),
 ]
 
 # Zonas / puntos de interes dentro de pabellones (se cuelgan del pasillo del piso indicado)
