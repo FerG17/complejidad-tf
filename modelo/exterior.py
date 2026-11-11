@@ -19,7 +19,7 @@ for i, x, y in [("s1", 157, 725), ("s2", 168, 708), ("s3", 175, 692), ("w1", 80,
                 ("u3", 195, 598), ("J_SW", 184, 576)]:
     nodo(i, x, y, "interseccion")
 nodo("u_23", 195, 620, "interseccion")
-nodo("A22", 97, 688, "ascensor", "Ascensor Tópico (22)")
+nodo("A22", 97, 688, "ascensor", "Ascensores Biblioteca (22)")
 nodo("P23", 166, 620, "entrada_accesible", "Pab. 23")
 
 # Anillo frente a 19/20

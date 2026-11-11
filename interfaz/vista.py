@@ -12,6 +12,7 @@ from OpenGL import GL
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from modelo.config import ESCALA
+from modelo.construccion import HUELLAS
 
 CAPA = {GL.GL_DEPTH_TEST: False, GL.GL_BLEND: True, GL.GL_CULL_FACE: False,
         "glBlendFuncSeparate": (GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA, GL.GL_ONE, GL.GL_ONE_MINUS_SRC_ALPHA)}
@@ -29,7 +30,6 @@ PESO_CLIC = {"zona": 1.0, "ascensor": 1.0, "escalera": 1.0, "entrada_accesible":
              "puerta": 1.3}
 FONDO_3D = (247, 249, 252)
 PISOS_MAX = 7
-CIRCULARES = {"I"}
 MARGEN_HUELLA = 1.5
 SUELO_PX = (20, 790, 250, 780)
 
@@ -85,13 +85,6 @@ def _rectangulo(pts, margen):
     _, M, mn, mx = mejor
     esq = np.array([[mn[0], mn[1]], [mx[0], mn[1]], [mx[0], mx[1]], [mn[0], mx[1]]])
     return esq @ M.T
-
-
-def _circulo(pts, margen, lados=40):
-    c = pts.mean(0)
-    r = np.hypot(*(pts - c).T).max() + margen
-    t = np.linspace(0, 2 * np.pi, lados, endpoint=False)
-    return np.c_[c[0] + r * np.cos(t), c[1] + r * np.sin(t)]
 
 
 class _Malla:
@@ -230,14 +223,12 @@ class Vista(QtCore.QObject):
         self.huella, self.col_idx, self.npisos, self.zbase, self.zonas = {}, {}, {}, {}, {}
         for p in self.pabs:
             m = self.PAB == p
-            pts = np.c_[self.X3[m], self.Y3[m]]
-            if p in CIRCULARES:
-                H = _circulo(pts, MARGEN_HUELLA)
-                self.col_idx[p] = list(range(0, len(H), 5))
+            if p in HUELLAS:
+                H = [np.array([(x * ESCALA, -y * ESCALA) for x, y in poly]) for poly in HUELLAS[p]]
             else:
-                H = _rectangulo(pts, MARGEN_HUELLA)
-                self.col_idx[p] = [0, 1, 2, 3]
+                H = [_rectangulo(np.c_[self.X3[m], self.Y3[m]], MARGEN_HUELLA)]
             self.huella[p] = H
+            self.col_idx[p] = [list(range(0, len(h), 5 if len(h) > 12 else 1)) for h in H]
             self.npisos[p] = int(self.PISO[m].max())
             self.zbase[p] = float(self.Z3[m & (self.PISO == 1)].mean())
             for pi in range(1, self.npisos[p] + 1):
@@ -423,8 +414,11 @@ class Vista(QtCore.QObject):
         return x0, x1, y0, y1, zmax, zex
 
     def _cascaron(self, M, p, pv, detalle):
-        H, n, zb = self.huella[p], self.npisos[p], self.zbase[p]
-        cols = self.col_idx[p]
+        n, zb = self.npisos[p], self.zbase[p]
+        for H, cols in zip(self.huella[p], self.col_idx[p]):
+            self._prisma(M, H, cols, n, zb, pv, detalle)
+
+    def _prisma(self, M, H, cols, n, zb, pv, detalle):
         if detalle:
             pisos = range(1, n + 1) if not pv else ([pv] if pv <= n else [])
             for k in pisos:

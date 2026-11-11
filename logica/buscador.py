@@ -137,7 +137,7 @@ def opciones_destino(G):
     for n in G.nodos.values():
         if not n["pab"] and n["tipo"] == "zona":
             op[n["etiqueta"]] = n["id"]
-    op["Topico (22)"] = "A22"
+    op["Ascensores Biblioteca (22)"] = "A22"
     op["Rotonda central (11)"] = "RG0"
     for n in G.nodos.values():
         if n["pab"] and n["tipo"] == "zona":

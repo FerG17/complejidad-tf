@@ -11,6 +11,7 @@ Los recintos "(aprox)" no tienen rotulo legible (nombre y posicion estimados); p
 import math
 
 from modelo import puertas
+from modelo.pabellones import biblioteca
 from modelo.config import ALTO_PISO, BASE_Z, COSTO_ASCENSOR, COSTO_ESCALERA, ESCALA, ESPACIADO
 
 def _muestrear(pts):
@@ -100,14 +101,14 @@ def construir_k(G):
         for s, n, xy, ps in esc:
             if piso in ps and piso + 1 in ps:
                 G.arista(anc[(piso, s)], anc[(piso + 1, s)], "escalera", acc=False, w=ALTO_PISO * COSTO_ESCALERA)
-    # K y la Biblioteca se unen en los pisos 1 a 5 por una plataforma plana junto a la escalera de emergencia
+    # K y la Biblioteca se unen en los pisos 1 a 5 por una plataforma plana junto a la escalera de emergencia (extremo norte del anexo)
     for piso in range(1, DATOS_K["pisos"] + 1):
-        k0, i0 = f"K{piso}_c00", f"I{piso}_a04"
+        k0, i0 = f"K{piso}_c00", f"I{piso}_{biblioteca.NODO_ENLACE_K}"
         A, B = G.nodos[k0], G.nodos[i0]
         pid = f"K{piso}_puerta_I"
         G.nodo(pid, (A["x_px"] + B["x_px"]) / 2, (A["y_px"] + B["y_px"]) / 2, A["z"], piso, "K", "puerta",
                "Puerta de paso Biblioteca (I) - K", ancho_m=puertas.ANCHO_DEF, escalon=False)
-        nota = "K se une al anexo norte de la Biblioteca en los pisos 1 a 5 (indicado por el equipo)"
+        nota = "K se une a la extension de la Biblioteca en los pisos 1 a 5 (indicado por el equipo)"
         G.arista(i0, pid, "pasaje", nota=nota)
         G.arista(pid, k0, "pasaje", nota=nota)
 
@@ -132,6 +133,10 @@ def construir_l(G):
     for nom in anc_a[1]:     # ascensor exterior A4 (plano oficial) <-> ascensores de L en el piso 1
         G.arista("A4", anc_a[1][nom], "puerta")
 
+
+# huellas 3D (px de plano.png): contorno gris de cada edificio en el plano, como poligono convexo
+HUELLAS = {"K": [[(61, 447), (75, 446), (148, 496), (157, 503), (89, 566), (61, 566)]],
+           "L": [[(460, 294), (479, 290), (745, 291), (746, 295), (737, 352), (509, 352), (460, 300)]]}
 
 DATOS_K = {'escaleras': {'N': {'pisos': (1, 2, 3, 4, 5), 'xy': (102, 469)},
                          'NE': {'pisos': (1, 2, 3, 4), 'xy': (133, 483)},
