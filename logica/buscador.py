@@ -129,9 +129,35 @@ def buscar(G, texto, n=8, pab=None, piso=None, tipos=None):
     return [r[-1] for r in res[:n]]
 
 
+def opciones_destino(G):
+    """Puntos que se pueden elegir como origen/destino: {etiqueta: id}."""
+    op = {}
+    for i in ("E_SUR", "E_PRIM"):
+        op[G.nodos[i]["etiqueta"]] = i
+    for n in G.nodos.values():
+        if not n["pab"] and n["tipo"] == "zona":
+            op[n["etiqueta"]] = n["id"]
+    op["Topico (22)"] = "A22"
+    op["Rotonda central (11)"] = "RG0"
+    for n in G.nodos.values():
+        if n["pab"] and n["tipo"] == "zona":
+            nom = "Biblioteca" if n["pab"] == "I" else f"Pabellon {n['pab']}"
+            op[f"{nom} p{n['piso']} - {n['etiqueta']}"] = n["id"]
+    for p in sorted({n["pab"] for n in G.nodos.values() if n["pab"]}):
+        for piso in sorted({n["piso"] for n in G.nodos.values() if n["pab"] == p}):
+            if p == "I":
+                op[f"Pabellon {p} - piso {piso}"] = f"{p}{piso}_hall"
+            elif p == "A":
+                op[f"Pabellon {p} - piso {piso}"] = f"{p}{piso}_e00"
+            else:
+                c = [n["id"] for n in G.piso_nodos(p, piso) if n["tipo"] == "pasillo"]
+                op[f"Pabellon {p} - piso {piso}"] = c[len(c) // 2]
+    return op
+
+
 if __name__ == "__main__":
     import sys
-    import generador
-    G = generador.construir()
+    from modelo import construccion
+    G = construccion.construir()
     for i in buscar(G, " ".join(sys.argv[1:]), n=30):
         print(i, "|", G.nodos[i]["nombre"])

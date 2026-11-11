@@ -10,8 +10,8 @@ Ascensores fuera de servicio: se pueden marcar en cualquier momento (antes de in
 """
 import math
 
-import algoritmos as alg
-import ascensores
+from logica import algoritmos as alg
+from logica import ascensores
 
 VEL_M_S = 1.2   # velocidad de recorrido simulada (m/s, ritmo de silla de ruedas)
 

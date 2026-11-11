@@ -1,11 +1,10 @@
 """
 Vista dedicada de la Biblioteca (pabellon I): los 7 pisos en 2D + torre 3D, con una ruta accesible de ejemplo.
-Uso:  python ver_biblioteca.py                      (ventana)
-      python ver_biblioteca.py --png                (guarda capturas/biblioteca_7_pisos.png)
-      python ver_biblioteca.py --destino "Biblioteca p6 - CUB-12"   (otro destino; ver opciones en generador.opciones_destino)
+Uso:  python -m herramientas.ver_biblioteca.py                      (ventana)
+      python -m herramientas.ver_biblioteca.py --png                (guarda capturas/biblioteca_7_pisos.png)
+      python -m herramientas.ver_biblioteca.py --destino "Biblioteca p6 - CUB-12"   (otro destino; ver opciones en buscador.opciones_destino)
 """
 import sys
-from pathlib import Path
 
 import matplotlib
 if "--png" in sys.argv:
@@ -13,17 +12,18 @@ if "--png" in sys.argv:
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-import algoritmos as alg
-import generador
+from logica import algoritmos as alg
+from logica import buscador
+from modelo import construccion
+from modelo.config import CAPTURAS
 
-CARPETA = Path(__file__).resolve().parent
 ZE = 5.0
 COL = {"pasillo": "#aab4c2", "escalera": "#d62828", "ascensor": "#1b9e3e", "puerta": "#f28c1b"}
 
 
 def main():
-    G = generador.construir()
-    op = generador.opciones_destino(G)
+    G = construccion.construir()
+    op = buscador.opciones_destino(G)
     destino = op["Biblioteca p7 - CUB-37"]
     if "--destino" in sys.argv:
         destino = op[sys.argv[sys.argv.index("--destino") + 1]]
@@ -96,7 +96,7 @@ def main():
              "Centro con piso: p1, p2, p6, p7\n(p3-p5: vacio central)\nNumeracion CUB-xx: aproximada",
              fontsize=9, va="top")
     if "--png" in sys.argv:
-        out = CARPETA / "capturas"
+        out = CAPTURAS
         out.mkdir(exist_ok=True)
         fig.savefig(out / "biblioteca_7_pisos.png", dpi=110)
         print("Guardado", out / "biblioteca_7_pisos.png", "| nodos I:", len(nodosI), "aristas:", len(aristasI))

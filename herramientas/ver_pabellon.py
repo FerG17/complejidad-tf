@@ -1,11 +1,10 @@
 """
 Vista de un pabellon modelado en detalle: todos los pisos en 2D + torre 3D + ruta de ejemplo.
-Uso:  python ver_pabellon.py A            (ventana)         python ver_pabellon.py I --png
-      python ver_pabellon.py A --destino "Pabellon A p5 - Aula A-54"      (nombres: ver generador.opciones_destino)
+Uso:  python -m herramientas.ver_pabellon.py A            (ventana)         python -m herramientas.ver_pabellon.py I --png
+      python -m herramientas.ver_pabellon.py A --destino "Pabellon A p5 - Aula A-54"      (nombres: ver buscador.opciones_destino)
 Si no existe ruta accesible, se muestra la mas corta CON escaleras y se avisa en el titulo.
 """
 import sys
-from pathlib import Path
 
 import matplotlib
 if "--png" in sys.argv:
@@ -13,10 +12,11 @@ if "--png" in sys.argv:
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-import algoritmos as alg
-import generador
+from logica import algoritmos as alg
+from logica import buscador
+from modelo import construccion
+from modelo.config import CAPTURAS
 
-CARPETA = Path(__file__).resolve().parent
 ZE = 5.0
 DESTINO = {"A": "Pabellon A p5 - Aula A-54", "I": "Biblioteca p7 - CUB-54 (aprox)"}
 NOMBRE = {"A": "Pabellon A + Aula Magna", "I": "Biblioteca (Pabellon I)"}
@@ -25,8 +25,8 @@ NOMBRE_DEF = lambda p: f"Pabellon {p}"
 
 def main():
     pab = next((a for a in sys.argv[1:] if len(a) == 1 and a.isalpha()), "A")
-    G = generador.construir()
-    op = generador.opciones_destino(G)
+    G = construccion.construir()
+    op = buscador.opciones_destino(G)
     if "--destino" in sys.argv:
         dest = op[sys.argv[sys.argv.index("--destino") + 1]]
     elif pab in DESTINO:
@@ -114,7 +114,7 @@ def main():
           Line2D([0], [0], color="#0b8a3e", lw=3, label="Ruta A*")]
     leg.legend(handles=hd, loc="upper left", fontsize=9.5, frameon=False)
     if "--png" in sys.argv:
-        out = CARPETA / "capturas"
+        out = CAPTURAS
         out.mkdir(exist_ok=True)
         f = out / f"pabellon_{pab}_detalle.png"
         fig.savefig(f, dpi=105)

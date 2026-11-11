@@ -6,7 +6,8 @@ Conversion placa->plano: (205 + (px-120)*0.154, 618 + (py-565)*0.154), calibrada
 """
 import math
 
-import puertas
+from modelo import puertas
+from modelo.config import ALTO_PISO, BASE_Z, COSTO_ASCENSOR, COSTO_ESCALERA, ESCALA, ESPACIADO
 
 K = 0.154
 
@@ -44,18 +45,21 @@ OVALO = {
 }
 
 
-def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc):
-    m_por_placa = K * escala     # metros por pixel de placa
-    n_ew = int(math.ceil((1062 - 470) * m_por_placa / espaciado)) + 1
-    n_n = int(math.ceil((585 - 340) * m_por_placa / espaciado))
-    n_s = int(math.ceil((830 - 585) * m_por_placa / espaciado))
+PISOS = 5
+
+
+def construir(G):
+    m_por_placa = K * ESCALA     # metros por pixel de placa
+    n_ew = int(math.ceil((1062 - 470) * m_por_placa / ESPACIADO)) + 1
+    n_n = int(math.ceil((585 - 340) * m_por_placa / ESPACIADO))
+    n_s = int(math.ceil((830 - 585) * m_por_placa / ESPACIADO))
     ew_x = [470 + (1062 - 470) * k / (n_ew - 1) for k in range(n_ew)]
     ns_n = [585 - (585 - 340) * (j + 1) / n_n for j in range(n_n)]      # hacia el norte
     ns_s = [585 + (830 - 585) * (j + 1) / n_s for j in range(n_s)]      # hacia el sur
 
     anc = {}
-    for p in range(1, sp["pisos"] + 1):
-        z = base_z + (p - 1) * alto_piso
+    for p in range(1, PISOS + 1):
+        z = BASE_Z["A"] + (p - 1) * ALTO_PISO
         pre = f"A{p}_"
         ew = []
         for k, x in enumerate(ew_x):
@@ -99,9 +103,9 @@ def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc)
             puertas.poner_sala(G, ancla(donde), f"{pre}{n}", etq, cp(*sala), z, p, "A", puerta_xy=cp(*pu))
         for n, etq, sala, pu in OVALO.get(p, []):
             puertas.poner_sala(G, ew[0], f"{pre}{n}", etq, cp(*sala), z, p, "A", puerta_xy=cp(*pu))
-    for p in range(1, sp["pisos"]):
+    for p in range(1, PISOS):
         for s in (1, 2):
-            G.arista(anc[(p, s)], anc[(p + 1, s)], "escalera", acc=False, w=alto_piso * costo_esc)
+            G.arista(anc[(p, s)], anc[(p + 1, s)], "escalera", acc=False, w=ALTO_PISO * COSTO_ESCALERA)
     def con_puerta(ext, ancla_id, etq, nota):
         a, b = G.nodos[ext], G.nodos[ancla_id]
         pid = f"A1_puerta_{ext}"

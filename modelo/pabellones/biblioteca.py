@@ -8,7 +8,8 @@ Los cubiculos marcados "(aprox)" pueden diferir en 1-2 numeros de las placas.
 """
 import math
 
-import puertas
+from modelo import puertas
+from modelo.config import ALTO_PISO, BASE_Z, COSTO_ASCENSOR, COSTO_ESCALERA, ESCALA, ESPACIADO
 
 CX, CY, R = 122.0, 628.0, 65.0
 N_ANILLO, N_INTERIOR = 24, 12
@@ -85,8 +86,11 @@ def _pol(ang_deg, frac):
     return CX + frac * R * math.cos(a), CY + frac * R * math.sin(a)
 
 
-def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc):
-    n_anexo = max(int(math.ceil((U_ANEXO[1] - U_ANEXO[0]) * R * escala / espaciado)) + 1, 8)
+PISOS = 7
+
+
+def construir(G):
+    n_anexo = max(int(math.ceil((U_ANEXO[1] - U_ANEXO[0]) * R * ESCALA / ESPACIADO)) + 1, 8)
     anexo_pts = [(CX + (U_ANEXO[0] + (U_ANEXO[1] - U_ANEXO[0]) * k / (n_anexo - 1)) * R, CY + V_ANEXO * R)
                  for k in range(n_anexo)]
 
@@ -94,8 +98,8 @@ def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc)
         return int(round((u - U_ANEXO[0]) / (U_ANEXO[1] - U_ANEXO[0]) * (n_anexo - 1)))
 
     anc = {}
-    for piso in range(1, sp["pisos"] + 1):
-        z = base_z + (piso - 1) * alto_piso
+    for piso in range(1, PISOS + 1):
+        z = BASE_Z["I"] + (piso - 1) * ALTO_PISO
         pre = f"I{piso}_"
         for k in range(N_ANILLO):
             x, y = _pol(360 * k / N_ANILLO, R_ANILLO)
@@ -156,10 +160,10 @@ def construir(G, sp, alto_piso, base_z, espaciado, escala, costo_esc, costo_asc)
             abierta = etq.startswith(("Hall", "Sala de lectura", "Mediateca", "Modulo", "Counter", "Fotocopia auto",
                                       "Control", "Terraza", "Estante", "Libreria"))
             puertas.poner_sala(G, ancla, zid, etq, (x, y), z, piso, "I", puerta=not abierta)
-    for piso in range(1, sp["pisos"]):
+    for piso in range(1, PISOS):
         for s in ("esc1", "esc2"):
-            G.arista(anc[(piso, s)], anc[(piso + 1, s)], "escalera", acc=False, w=alto_piso * costo_esc)
+            G.arista(anc[(piso, s)], anc[(piso + 1, s)], "escalera", acc=False, w=ALTO_PISO * COSTO_ESCALERA)
         for s in ("asc1", "asc2"):
-            G.arista(anc[(piso, s)], anc[(piso + 1, s)], "ascensor", acc=True, w=alto_piso + costo_asc)
+            G.arista(anc[(piso, s)], anc[(piso + 1, s)], "ascensor", acc=True, w=ALTO_PISO + COSTO_ASCENSOR)
     # entrada accesible del campus (piso 1, lado este del anillo)
     G.arista("P23", "I1_o00", "puerta")

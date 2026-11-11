@@ -11,7 +11,7 @@ import pyqtgraph.opengl as gl
 from OpenGL import GL
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from generador import ESCALA
+from modelo.config import ESCALA
 
 CAPA = {GL.GL_DEPTH_TEST: False, GL.GL_BLEND: True, GL.GL_CULL_FACE: False,
         "glBlendFuncSeparate": (GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA, GL.GL_ONE, GL.GL_ONE_MINUS_SRC_ALPHA)}

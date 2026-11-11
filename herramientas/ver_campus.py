@@ -1,6 +1,5 @@
-"""Vista general del campus: plano 2D con el grafo + 3D de todos los pabellones. python ver_campus.py [--png]"""
+"""Vista general del campus: plano 2D con el grafo + 3D de todos los pabellones. python -m herramientas.ver_campus [--png]"""
 import sys
-from pathlib import Path
 
 import matplotlib
 if "--png" in sys.argv:
@@ -9,15 +8,15 @@ import matplotlib.pyplot as plt
 from matplotlib.image import imread
 from matplotlib.lines import Line2D
 
-import generador
+from modelo import construccion
+from modelo.config import CAPTURAS, ESCALA, PLANO
 
-CARPETA = Path(__file__).resolve().parent
 DET = {"A": "#7b2cbf", "I": "#c2185b"}      # pabellones con detalle
 ZE = 3.0
 
 
 def main():
-    G = generador.construir()
+    G = construccion.construir()
     N = G.nodos
     fig = plt.figure(figsize=(20, 10.5))
     n_det = sum(1 for n in N.values() if n["pab"] in DET)
@@ -25,7 +24,7 @@ def main():
                  f"A-J modelados con salas y puertas ({sum(1 for n in N.values() if n['tipo'] == 'puerta')} puertas); K y L pendientes",
                  fontsize=12, fontweight="bold")
     a2 = fig.add_axes([0.0, 0.04, 0.5, 0.86])
-    a2.imshow(imread(str(CARPETA / "plano.png")))
+    a2.imshow(imread(str(PLANO)))
     for e in G.aristas:
         A, B = N[e["a"]], N[e["b"]]
         if A["piso"] > 1 or B["piso"] > 1:
@@ -53,9 +52,9 @@ def main():
     # plano oficial como suelo del 3D (para ver distancias y espacios libres entre pabellones)
     import numpy as np
     from PIL import Image
-    im = Image.open(CARPETA / "plano.png").convert("RGB").crop((30, 262, 770, 765)).resize((296, 200))
+    im = Image.open(PLANO).convert("RGB").crop((30, 262, 770, 765)).resize((296, 200))
     tex = np.asarray(im) / 255.0
-    X, Y = np.meshgrid(np.linspace(30, 770, 296) * generador.ESCALA, -np.linspace(262, 765, 200) * generador.ESCALA)
+    X, Y = np.meshgrid(np.linspace(30, 770, 296) * ESCALA, -np.linspace(262, 765, 200) * ESCALA)
     a3.plot_surface(X, Y, np.full_like(X, -1.0), facecolors=tex, rstride=1, cstride=1, shade=False, zorder=0)
     for e in G.aristas:
         A, B = N[e["a"]], N[e["b"]]
@@ -87,7 +86,7 @@ def main():
          Line2D([0], [0], color="#1b9e3e", lw=2, label="Ascensor")]
     fig.legend(handles=h, loc="lower center", ncol=6, fontsize=9.5, frameon=False)
     if "--png" in sys.argv:
-        out = CARPETA / "capturas"
+        out = CAPTURAS
         out.mkdir(exist_ok=True)
         fig.savefig(out / "campus_completo.png", dpi=105)
         print("Guardado", out / "campus_completo.png")
