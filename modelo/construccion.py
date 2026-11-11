@@ -3,13 +3,13 @@ Generador del grafo 3D del Campus Monterrico (UPC) - Equipo 10, 1ACC0184.
 
 Une el grafo exterior (exterior.py) con los pabellones de modelo/pabellones/ y los conecta con pasajes. Devuelve un
 Grafo en memoria y, como script (python -m modelo.construccion), exporta datos/nodos.csv y datos/aristas.csv.
-Numeros del plano oficial: A 16/17/18, B 34, C 29, D 28, E 15, F 14, G 12/13, H 8/9/10, I 23/24/25, J 30-33.
+Numeros del plano oficial: A 16/17/18, B 34, C 29, D 28, E 15, F 14, G 12/13, H 8/9/10, I 23/24/25, J 30-33, K 26/27, L 1/3/4.
 
 Supuestos (las aristas supuestas llevan nota en aristas.csv):
   * ESCALA 0.275 m/px: calibrada contra Google Maps y la medicion Primavera-Alonso de Molina (131.85 m), error ~7 m.
   * BASE_Z = 0 en todos los pabellones (el campus tiene pendiente).
   * Pasillos J-B, C-D y E-F-G a nivel y accesibles en todos los pisos; E-A solo por escaleras.
-  * Pabellones K y L no incluidos todavia.
+  * K y la Biblioteca se unen en los pisos 1 a 5; K y L: ver pabellones/planta_libre.py.
 """
 import csv
 from functools import partial
@@ -18,10 +18,11 @@ from pathlib import Path
 from modelo import exterior
 from modelo.config import DATOS
 from modelo.grafo import Grafo
-from modelo.pabellones import biblioteca, corredor, pabellon_a
+from modelo.pabellones import biblioteca, corredor, pabellon_a, planta_libre
 
-ESPECIALES = {"A": pabellon_a.construir, "I": biblioteca.construir}
-CONSTRUCTORES = {p: ESPECIALES.get(p) or partial(corredor.construir, pab=p) for p in "ABCDEFGHIJ"}
+ESPECIALES = {"A": pabellon_a.construir, "I": biblioteca.construir,
+              "K": planta_libre.construir_k, "L": planta_libre.construir_l}
+CONSTRUCTORES = {p: ESPECIALES.get(p) or partial(corredor.construir, pab=p) for p in "ABCDEFGHIJKL"}
 
 # Pasillos entre pabellones (por piso): (pab1, t1, pab2, t2, nota)
 PASAJES = [

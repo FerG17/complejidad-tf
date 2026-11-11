@@ -21,7 +21,7 @@ def main():
     fig = plt.figure(figsize=(20, 10.5))
     n_det = sum(1 for n in N.values() if n["pab"] in DET)
     fig.suptitle(f"Campus Monterrico - grafo 3D | {len(N)} nodos, {len(G.aristas)} aristas | "
-                 f"A-J modelados con salas y puertas ({sum(1 for n in N.values() if n['tipo'] == 'puerta')} puertas); K y L pendientes",
+                 f"A-L modelados con salas y puertas ({sum(1 for n in N.values() if n['tipo'] == 'puerta')} puertas)",
                  fontsize=12, fontweight="bold")
     a2 = fig.add_axes([0.0, 0.04, 0.5, 0.86])
     a2.imshow(imread(str(PLANO)))
@@ -37,7 +37,7 @@ def main():
             a2.scatter([n["x_px"]], [n["y_px"]], s=6, c=DET[n["pab"]], zorder=5)
         if n["tipo"] == "ascensor" and n["piso"] <= 1:
             a2.scatter([n["x_px"]], [n["y_px"]], marker="^", s=55, c="#1b9e3e", edgecolors="k", linewidths=.5, zorder=6)
-    for p in "ABCDEFGHIJ":
+    for p in "ABCDEFGHIJKL":
         ns = [n for n in N.values() if n["pab"] == p and n["piso"] == 1 and n["tipo"] == "pasillo"]
         cx = sum(n["x_px"] for n in ns) / len(ns)
         cy = sum(n["y_px"] for n in ns) / len(ns)
@@ -72,7 +72,7 @@ def main():
     a3.set_box_aspect((max(xs) - min(xs), max(ys) - min(ys), (max(zs) + 4) * 1.4))
     a3.view_init(elev=36, azim=-60)
     a3.set_axis_off()
-    for p in "ABCDEFGHIJ":
+    for p in "ABCDEFGHIJKL":
         ns = [n for n in N.values() if n["pab"] == p]
         top = max(n["piso"] for n in ns)
         tn = [n for n in ns if n["piso"] == top]

@@ -12,4 +12,4 @@ ESPACIADO = 1.5       # metros entre nodos consecutivos de un pasillo
 COSTO_ESCALERA = 3.0  # una escalera cuesta 3x el desnivel (esfuerzo)
 COSTO_ASCENSOR = 8.0  # penalizacion fija por esperar/usar el ascensor (en metros equivalentes)
 
-BASE_Z = {p: 0.0 for p in "ABCDEFGHIJ"}   # el campus tiene pendiente: todos parten de z = 0
+BASE_Z = {p: 0.0 for p in "ABCDEFGHIJKL"}   # el campus tiene pendiente: todos parten de z = 0

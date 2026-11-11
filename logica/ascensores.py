@@ -104,6 +104,18 @@ def retos(G):
         dict(titulo="Biblioteca sin ascensores",
              nota="Con los dos ascensores fuera de servicio no se puede subir. Destino de ejemplo: CUB-54 (piso 7).",
              origen=entrada, destino=cub54, fuera=["I:asc1", "I:asc2"]),
+        dict(titulo="K se alcanza por la Biblioteca",
+             nota="K no tiene ascensor: se sube por la Biblioteca y se cruza a K por la plataforma plana del mismo piso. "
+                  "Destino de ejemplo: K piso 4.", origen=entrada, destino=_sala(G, "K", 4), fuera=[]),
+        dict(titulo="Biblioteca sin ascensores: K aislado",
+             nota="K solo se alcanza desde la Biblioteca (pisos 2 a 5). Destino de ejemplo: K piso 4.",
+             origen=entrada, destino=_sala(G, "K", 4), fuera=["I:asc1", "I:asc2"]),
+        dict(titulo="L: cae un ascensor, sirve el otro",
+             nota="L tiene dos ascensores en el mismo nucleo. Destino de ejemplo: L piso 5.",
+             origen=entrada, destino=_sala(G, "L", 5), fuera=["L:asc1"]),
+        dict(titulo="L sin ascensores: pisos 2 a 5 aislados",
+             nota="Con los dos ascensores de L fuera de servicio solo queda el piso 1. Destino de ejemplo: L piso 5.",
+             origen=entrada, destino=_sala(G, "L", 5), fuera=["L:asc1", "L:asc2"]),
         dict(titulo="Pabellon A: sin ascensor",
              nota="A no tiene ascensor (desmarca 'Solo ruta accesible' para ver la ruta por escaleras). "
                   "Destino de ejemplo: A piso 2.", origen=entrada, destino=_sala(G, "A", 2), fuera=[]),
