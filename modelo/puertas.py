@@ -20,13 +20,16 @@ def poner_sala(G, ancla, sid, etiqueta, zona_xy, z, piso, pab, puerta=True, puer
     A = G.nodos[ancla]
     if puerta_xy is None:
         puerta_xy = ((A["x_px"] + zona_xy[0]) / 2, (A["y_px"] + zona_xy[1]) / 2)
-    pid = sid + "_p"
+    poner_puerta(G, ancla, sid, sid + "_p", puerta_xy, z, piso, pab, etiqueta)
+    return sid
+
+
+def poner_puerta(G, ancla, sid, pid, xy, z, piso, pab, etiqueta):
+    """Nodo puerta `pid` entre `ancla` y la sala `sid` (una sala puede tener varias puertas)."""
     ov = OVERRIDES.get(sid, {})
     ancho = ov.get("ancho", ANCHO_DEF)
     esc = ov.get("escalon", False)
     acc = ancho >= ANCHO_MIN and not esc
-    G.nodo(pid, puerta_xy[0], puerta_xy[1], z, piso, pab, "puerta", f"Puerta {etiqueta}",
-           ancho_m=ancho, escalon=esc)
+    G.nodo(pid, xy[0], xy[1], z, piso, pab, "puerta", f"Puerta {etiqueta}", ancho_m=ancho, escalon=esc)
     G.arista(ancla, pid, "puerta", acc=acc, nota="" if acc else "puerta NO accesible (ancho/escalon)")
     G.arista(pid, sid, "puerta", acc=acc)
-    return sid

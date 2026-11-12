@@ -12,6 +12,7 @@ import math
 
 from modelo import puertas
 from modelo.config import ALTO_PISO, BASE_Z, COSTO_ASCENSOR, COSTO_ESCALERA, ESCALA, ESPACIADO
+from modelo.pabellones import h_piso4
 
 ABIERTAS = ("Hall", "Terraza", "Ingreso", "Jardin", "Planta libre", "Ambiente")
 
@@ -58,10 +59,19 @@ def construir(G, pab):
     def k_de(t):
         return min(n - 1, max(0, int(round(t * (n - 1))))) if not cerrado else int(round(t * n)) % n
 
+    ejes = sp.get("ejes")   # posicion real (px) de escaleras y ascensor, iguales en todos los pisos
+
+    def mas_cercano(pos):
+        return min(range(n), key=lambda k: (pts[k][0] - pos[0]) ** 2 + (pts[k][1] - pos[1]) ** 2)
+
     anc, ids_por_piso = {}, {}
     for p in range(1, sp["pisos"] + 1):
         z = base_z + (p - 1) * ALTO_PISO
         pre = f"{pab}{p}_"
+        if p in sp.get("detalle", {}):
+            ids_por_piso[p], a = sp["detalle"][p](G, z, p, pab)
+            anc.update(a)
+            continue
         ids = []
         for k, (x, y, _, _) in enumerate(pts):
             i = f"{pre}c{k:02d}"
@@ -76,7 +86,10 @@ def construir(G, pab):
             k = k_de(t)
             nx, ny = normal(k, 1 if off >= 0 else -1)
             i = f"{pre}esc{s + 1}"
-            G.nodo(i, pts[k][0] + nx * abs(off), pts[k][1] + ny * abs(off), z, p, pab, "escalera", f"Escalera {s + 1}")
+            xy = ejes["esc"][s] if ejes else (pts[k][0] + nx * abs(off), pts[k][1] + ny * abs(off))
+            if ejes:
+                k = mas_cercano(xy)
+            G.nodo(i, xy[0], xy[1], z, p, pab, "escalera", f"Escalera {s + 1}")
             G.arista(ids[k], i, "pasillo")
             anc[(p, f"esc{s + 1}")] = i
         if sp.get("ascensor"):
@@ -84,7 +97,10 @@ def construir(G, pab):
             k = k_de(t)
             nx, ny = normal(k, 1 if off >= 0 else -1)
             i = f"{pre}asc"
-            G.nodo(i, pts[k][0] + nx * abs(off), pts[k][1] + ny * abs(off), z, p, pab, "ascensor", f"Ascensor {pab}")
+            xy = ejes["asc"] if ejes else (pts[k][0] + nx * abs(off), pts[k][1] + ny * abs(off))
+            if ejes:
+                k = mas_cercano(xy)
+            G.nodo(i, xy[0], xy[1], z, p, pab, "ascensor", f"Ascensor {pab}")
             G.arista(ids[k], i, "pasillo")
             anc[(p, "asc")] = i
         for lado, signo in (("+", 1), ("-", -1)):
@@ -198,13 +214,12 @@ G = dict(pisos=5, corredor=[(622, 630), (650, 540)], prof=22, entradas=[("P12", 
 def _Hp(p, nombres):
     return {"+": nombres}
 H = dict(pisos=5, corredor=[(612, 438), (722, 425), (708, 508), (612, 508)], cerrado=True, prof=26,
-         entradas=[("P8b", 0.02)], ascensor=(0.58, None, -12), escaleras=[(0.12, 8), (0.62, 8), (0.92, 8)], salas={
+         entradas=[("P8b", 0.02)], ascensor=(0.58, None, -12), escaleras=[(0.12, 8), (0.62, 8), (0.92, 8)],
+         ejes=h_piso4.EJES, detalle={4: h_piso4.construir}, salas={
     1: {"+": ["Ingreso principal", "Hall", "SSHH DISCAP 1", "SSHH DISCAP 2", "Cuarto de limpieza", "Ingreso de servicio",
               "Auditorio Bancalari (10)"]},
     2: {"+": [f"Aula H-2{n} (aprox)" for n in range(0, 8)]},
     3: {"+": [f"Aula H-3{n} (aprox)" for n in range(0, 8)]},
-    4: {"+": ["Lab. software entretenimiento H-40", "Aula H-42", "Lab. computo H-43", "Aula H-44", "Aula H-45 (aprox)",
-              "Taller de diseno H-46", "Aula H-47 (aprox)", "Sala de servidores", "SSHH hombres", "Oficina PTC"]},
     5: {"+": ["Lab. MAC H-50", "Lab. diseno de software H-51", "Lab. computo H-52", "Aula H-53", "Capstone ing. sistemas H-54",
               "Aula acustica comunicaciones H-55", "Lab. computo H-56", "Ambiente disponible H-57", "Lab. computo H-58",
               "Lab. fisica H-59", "Cuarto data y com"]},
