@@ -11,53 +11,10 @@ Todas las coordenadas del esqueleto y del piso estan en pixeles de la foto corre
 """
 import math
 
-import numpy as np
-
 from modelo import puertas
+from modelo.nomenclatura import numerar
+from modelo.registro import ajustar, semejanza
 from modelo.config import ALTO_PISO, BASE_Z, COSTO_ASCENSOR, COSTO_ESCALERA, ESCALA, ESPACIADO
-
-
-def ajustar(pares):
-    """Foto -> plano a partir de pares ((x, y), (X, Y)): afin exacta con 3 pares, homografia con 4 o mas."""
-    if len(pares) == 3:
-        m = np.linalg.solve(np.array([[x, y, 1.0] for (x, y), _ in pares]), np.array([q for _, q in pares], float))
-        return lambda x, y: tuple(float(v) for v in np.array([x, y, 1.0]) @ m)
-    filas = []
-    for (x, y), (u, v) in pares:
-        filas += [[x, y, 1, 0, 0, 0, -u * x, -u * y, -u], [0, 0, 0, x, y, 1, -v * x, -v * y, -v]]
-    h = np.linalg.svd(np.array(filas, float))[2][-1].reshape(3, 3)
-
-    def f(x, y):
-        a, b, c = h @ (x, y, 1.0)
-        return (float(a / c), float(b / c))
-    return f
-
-
-def semejanza(pares):
-    """Foto -> plano con escala uniforme, giro y traslacion (minimos cuadrados): para pares casi alineados, donde una
-    homografia extrapola mal."""
-    a = np.array([p for p, _ in pares], float)
-    b = np.array([q for _, q in pares], float)
-    ma, mb = a.mean(0), b.mean(0)
-    u, d, vt = np.linalg.svd((b - mb).T @ (a - ma))
-    r = u @ np.diag([1, np.sign(np.linalg.det(u @ vt))]) @ vt
-    k = (d * [1, np.sign(np.linalg.det(u @ vt))]).sum() / ((a - ma) ** 2).sum()
-    return lambda x, y: tuple(float(v) for v in k * r @ (np.array([x, y]) - ma) + mb)
-
-
-GENERICOS = ("Administracion", "Oficina", "Almacen", "Oficina PTC")   # se numeran por piso: Administracion 1, 2, ...
-
-
-def _numerar(salas):
-    """Nombres genericos con numero correlativo dentro del piso (el piso ya distingue las demas plantas)."""
-    cuenta = {}
-    out = []
-    for etq, centro, pts in salas:
-        if etq in GENERICOS:
-            cuenta[etq] = cuenta.get(etq, 0) + 1
-            etq = f"{etq} {cuenta[etq]}"
-        out.append((etq, centro, pts))
-    return out
 
 
 def _d2(n, xy):
@@ -119,7 +76,7 @@ def construir_piso(G, pab, p, z, esq, datos, fijos):
         G.arista(a, b, "pasillo")
         base_ids += nuevos
 
-    for j, (etq, centro, pts) in enumerate(_numerar(datos["salas"])):
+    for j, (etq, centro, pts) in enumerate(numerar(datos["salas"])):
         sid = f"{pre}rp{j:02d}"
         G.nodo(sid, *f(*centro), z, p, pab, "zona", etq)
         for n, pt in enumerate(pts or [None]):

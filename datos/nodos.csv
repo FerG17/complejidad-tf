@@ -3554,8 +3554,8 @@ K2_esc2,36.58,132.83,3.5,2,K,escalera,Escalera Noreste K p2,,
 K2_esc3,21.18,153.18,3.5,2,K,escalera,Escalera Sur K p2,,
 K2_rp00,19.99,125.84,3.5,2,K,zona,K p2 - Cocina concesionario,,
 K2_rp00_p,19.25,126.86,3.5,2,K,puerta,Puerta Cocina concesionario (K p2),0.9,False
-K2_rp01,25.0,129.17,3.5,2,K,zona,K p2 - Almacen,,
-K2_rp01_p,26.03,130.01,3.5,2,K,puerta,Puerta Almacen (K p2),0.9,False
+K2_rp01,25.0,129.17,3.5,2,K,zona,K p2 - Almacen 1,,
+K2_rp01_p,26.03,130.01,3.5,2,K,puerta,Puerta Almacen 1 (K p2),0.9,False
 K2_rp02,19.64,136.78,3.5,2,K,zona,K p2 - Comedor 49 sillas,,
 K2_rp03,27.86,133.62,3.5,2,K,zona,K p2 - Terraza 24 sillas,,
 K3_c00,22.11,152.68,7.0,3,K,pasillo,Pasillo K p3 c00,,

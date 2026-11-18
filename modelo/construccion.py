@@ -18,28 +18,21 @@ from pathlib import Path
 from modelo import exterior
 from modelo.config import DATOS
 from modelo.grafo import Grafo
-from modelo.pabellones import a_plano, b_plano, biblioteca, c_plano, d_plano, e_plano, fg_plano, h_plano, j_plano, planta_libre, plano_foto
+from modelo.pabellones import biblioteca, datos, pabellon_foto, planta_libre
 
-ESPECIALES = {"A": partial(plano_foto.construir, pab="A", esq=a_plano.ESQ, pisos=a_plano.PISOS), "I": biblioteca.construir,
-              "K": planta_libre.construir_k, "L": planta_libre.construir_l,
-              "H": partial(plano_foto.construir, pab="H", esq=h_plano.ESQ, pisos=h_plano.PISOS),
-              "B": partial(plano_foto.construir, pab="B", esq=b_plano.ESQ, pisos=b_plano.PISOS),
-              "C": partial(plano_foto.construir, pab="C", esq=c_plano.ESQ, pisos=c_plano.PISOS),
-              "D": partial(plano_foto.construir, pab="D", esq=d_plano.ESQ, pisos=d_plano.PISOS),
-              "J": partial(plano_foto.construir, pab="J", esq=j_plano.ESQ, pisos=j_plano.PISOS),
-              "E": partial(plano_foto.construir, pab="E", esq=e_plano.ESQ, pisos=e_plano.PISOS),
-              "F": partial(plano_foto.construir, pab="F", esq=fg_plano.ESQ_F, pisos=fg_plano.PISOS_F),
-              "G": partial(plano_foto.construir, pab="G", esq=fg_plano.ESQ_G, pisos=fg_plano.PISOS_G)}
-HUELLAS = {"I": biblioteca.HUELLAS, "H": h_plano.HUELLAS, "E": e_plano.HUELLAS, "F": fg_plano.HUELLAS_F,
-           "G": fg_plano.HUELLAS_G, **planta_libre.HUELLAS}   # explicitas; las demas salen de los nodos
+_FOTO = {p: datos.cargar(p) for p in datos.PABELLONES}   # pabellones reconstruidos de las placas (datos/pabellones/*.json)
+ESPECIALES = {**{p: partial(pabellon_foto.construir, pab=p, esq=d["esq"], pisos=d["pisos"]) for p, d in _FOTO.items()},
+              "I": biblioteca.construir, "K": planta_libre.construir_k, "L": planta_libre.construir_l}
+HUELLAS = {"I": biblioteca.HUELLAS, **{p: d["huellas"] for p, d in _FOTO.items() if d["huellas"]},
+           **planta_libre.HUELLAS}   # explicitas; las demas salen de los nodos
 CONSTRUCTORES = {p: ESPECIALES[p] for p in "ABCDEFGHIJKL"}
 
-# Pasillos entre pabellones (por piso): (pab1, t1, pab2, t2, nota)
+# Pasillos entre pabellones (por piso): (pab1, ancla1, pab2, ancla2, nota); ancla = "inicio" | "fin" del pasillo del pabellon
 PASAJES = [
-    ("J", 1.0, "B", 0.0, "supuesto: pasillo J-B a nivel en todos los pisos (indicado por el equipo)"),
-    ("E", 1.0, "F", 0.0, "supuesto: E-F continuo en todos los pisos"),
-    ("F", 1.0, "G", 0.0, "supuesto: F-G continuo (un solo pasillo con su escalera)"),
-    ("D", 0.0, "C", 0.0, "confirmado por el equipo: plataforma plana C-D en los pisos 1 a 5 (en el hueco entre ambos "
+    ("J", "fin", "B", "inicio", "supuesto: pasillo J-B a nivel en todos los pisos (indicado por el equipo)"),
+    ("E", "fin", "F", "inicio", "supuesto: E-F continuo en todos los pisos"),
+    ("F", "fin", "G", "inicio", "supuesto: F-G continuo (un solo pasillo con su escalera)"),
+    ("D", "inicio", "C", "inicio", "confirmado por el equipo: plataforma plana C-D en los pisos 1 a 5 (en el hueco entre ambos "
                          "hay escaleras); posicion aproximada en el extremo norte"),
 ]
 
@@ -66,11 +59,10 @@ def construir():
         for piso, ids in (construir_pab(G) or {}).items():
             pasillos[(p, piso)] = ids
 
-    for p1, t1, p2, t2, nota in PASAJES:
+    ancla = lambda ids, cual: ids[0] if cual == "inicio" else ids[-1]
+    for p1, a1, p2, a2, nota in PASAJES:
         for piso in range(1, 6):
-            a = pasillos[(p1, piso)][round(t1 * (len(pasillos[(p1, piso)]) - 1))]
-            b = pasillos[(p2, piso)][round(t2 * (len(pasillos[(p2, piso)]) - 1))]
-            G.arista(a, b, "pasaje", nota=nota)
+            G.arista(ancla(pasillos[(p1, piso)], a1), ancla(pasillos[(p2, piso)], a2), "pasaje", nota=nota)
 
     for zid, etq, ext_id, dx, dy in ZONAS_EXT:
         a = G.nodos[ext_id]
