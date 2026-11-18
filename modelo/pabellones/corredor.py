@@ -1,5 +1,5 @@
 """
-Pabellones de pasillo B, C, D, E, F, G, H y J: constructor generico + datos de cada uno (placas de evacuacion/riesgos
+Pabellones de pasillo B, C, D, H y J: constructor generico + datos de cada uno (placas de evacuacion/riesgos
 fotografiadas por el equipo). El corredor se apoya en la huella real del edificio sobre plano.png (pixeles).
 Nombres de salas tomados de las placas; "(aprox)" = numero/nombre no legible con certeza.
 
@@ -189,27 +189,6 @@ J = dict(pisos=5, corredor=[(230, 322), (298, 322)], prof=24, entradas=[("P31", 
     5: {"+": _J_SS + ["Asesoria riesgo", "Sala de reuniones"], "-": ["PTC 1 (aprox)", "PTC 2 (aprox)", "PTC 3 (aprox)"]},
 })
 
-def _E(p, lab=False):
-    arriba = ([f"Aula E-{p}{n}" for n in (1, 2, 3, 4)] if not lab else ["Lab. multifuncional", "Lab. biologico", "Oficina (aprox)", "Lab. (aprox)"])
-    return {"-": arriba, "+": ([f"Aula E-{p}{n}" for n in (5, 6, 7, 8)] if p != 1 else ["Taller 1 (aprox)", "Taller 2 (aprox)", "Lab. 1 (aprox)", "Lab. 2 (aprox)"]) + ["SSHH hombres", "SSHH mujeres"]}
-E = dict(pisos=5, corredor=[(396, 648), (473, 648)], prof=34, entradas=[("P15", 0.0)], ascensor=(0.05, "A15", 10),
-         escaleras=[(0.35, 8), (0.65, 8), (0.95, 8)], salas={1: _E(1), 2: _E(2), 3: _E(3, lab=True), 4: _E(4),
-                                                              5: {"-": ["Lab. computo E-54", "Lab. computo E-53", "Aula E-52", "Aula E-51"],
-                                                                  "+": ["Aula E-55", "Aula E-56", "Aula E-57", "Aula E-58", "SSHH hombres", "SSHH mujeres"]}})
-
-# F: ala larga E-O
-def _F(p):
-    return {"-": [f"F-{p}1 (aprox)", f"F-{p}2 (aprox)", f"F-{p}3 (aprox)", f"F-{p}4 (aprox)"],
-            "+": [f"F-{p}5 (aprox)", f"F-{p}6 (aprox)", f"F-{p}7 (aprox)", f"F-{p}8 (aprox)"]}
-F = dict(pisos=5, corredor=[(480, 648), (606, 648)], prof=34, entradas=[], ascensor=None,
-         escaleras=[(0.12, 8), (0.88, 8)], salas={p: _F(p) for p in range(1, 6)})
-
-# G: ala NNE, con ascensor
-def _G(p):
-    return {"+": [f"Aula G-{p}1 (aprox)", f"Aula G-{p}2 (aprox)", "SSHH"], "-": [f"Aula G-{p}3 (aprox)", f"Aula G-{p}4 (aprox)"]}
-G = dict(pisos=5, corredor=[(622, 630), (650, 540)], prof=22, entradas=[("P12", 0.08)], ascensor=(0.12, "A12", 8),
-         escaleras=[(0.3, -8), (0.92, -8)], salas={p: _G(p) for p in range(1, 6)})
-
 # H: anillo alrededor del vacio central
 def _Hp(p, nombres):
     return {"+": nombres}
@@ -225,4 +204,4 @@ H = dict(pisos=5, corredor=[(612, 438), (722, 425), (708, 508), (612, 508)], cer
               "Lab. fisica H-59", "Cuarto data y com"]},
 })
 
-ESPEC = {"B": B, "C": C, "D": D, "E": E, "F": F, "G": G, "H": H, "J": J}
+ESPEC = {"B": B, "C": C, "D": D, "H": H, "J": J}

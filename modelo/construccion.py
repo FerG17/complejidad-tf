@@ -18,11 +18,15 @@ from pathlib import Path
 from modelo import exterior
 from modelo.config import DATOS
 from modelo.grafo import Grafo
-from modelo.pabellones import biblioteca, corredor, h_piso4, pabellon_a, planta_libre
+from modelo.pabellones import biblioteca, corredor, e_plano, fg_plano, h_piso4, pabellon_a, planta_libre, plano_foto
 
 ESPECIALES = {"A": pabellon_a.construir, "I": biblioteca.construir,
-              "K": planta_libre.construir_k, "L": planta_libre.construir_l}
-HUELLAS = {"I": biblioteca.HUELLAS, "H": h_piso4.HUELLAS, **planta_libre.HUELLAS}   # explicitas; las demas salen de los nodos
+              "K": planta_libre.construir_k, "L": planta_libre.construir_l,
+              "E": partial(plano_foto.construir, pab="E", esq=e_plano.ESQ, pisos=e_plano.PISOS),
+              "F": partial(plano_foto.construir, pab="F", esq=fg_plano.ESQ_F, pisos=fg_plano.PISOS_F),
+              "G": partial(plano_foto.construir, pab="G", esq=fg_plano.ESQ_G, pisos=fg_plano.PISOS_G)}
+HUELLAS = {"I": biblioteca.HUELLAS, "H": h_piso4.HUELLAS, "E": e_plano.HUELLAS, "F": fg_plano.HUELLAS_F,
+           "G": fg_plano.HUELLAS_G, **planta_libre.HUELLAS}   # explicitas; las demas salen de los nodos
 CONSTRUCTORES = {p: ESPECIALES.get(p) or partial(corredor.construir, pab=p) for p in "ABCDEFGHIJKL"}
 
 # Pasillos entre pabellones (por piso): (pab1, t1, pab2, t2, nota)
