@@ -22,6 +22,7 @@ SINONIMOS = {
     "gradas": ("escalera",), "escaleras": ("escalera",),
     "discapacitado": ("discap", "discapacitados"), "discapacitados": ("discap", "discapacitados"),
     "discapacidad": ("discap",),
+    "damas": ("mujeres", "damas"), "varones": ("hombres", "varones"), "caballeros": ("hombres",),
     "computacion": ("computo",), "computadoras": ("computo",), "pc": ("computo",),
     "cubiculo": ("cub",), "cubiculos": ("cub",),
     "oficinas": ("oficina",), "oficina": ("oficina", "of"),

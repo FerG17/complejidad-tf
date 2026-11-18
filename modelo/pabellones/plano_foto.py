@@ -1,11 +1,13 @@
 """
 Pisos reconstruidos de las placas fotografiadas y anotadas por el equipo.
-Cada foto se lleva a pixeles de plano.png con una homografia ajustada sobre las esquinas del edificio. El esqueleto de
-pasillos, escaleras y ascensor se define una vez por pabellon (en la foto de referencia) y se repite en todos los pisos,
-de modo que los ejes se apilan; las salas y puertas de cada piso salen de su propia foto.
+Cada foto se lleva a pixeles de plano.png con una homografia ajustada sobre puntos del edificio. El esqueleto de pasillos,
+escaleras y ascensor se define una vez por pabellon (en la foto de referencia) y se repite en todos los pisos, de modo que
+los ejes se apilan; las salas y puertas de cada piso salen de su propia foto. Un piso con circulacion distinta puede traer
+su propio esqueleto (clave "esq" del piso), pero escaleras y ascensor conservan la posicion fijada por el primer piso.
 
-esq   = dict(pares, cadenas, accesos, inicio, fin, entradas, asc_ext)
-piso  = dict(pares, salas=[(nombre, centro, [puertas])], extras=[cadena...])   # coordenadas de la foto
+esq   = dict(pares, cadenas, accesos, inicio, fin, entradas, asc_ext, enlaces)
+piso  = dict(pares, salas=[(nombre, centro, [puertas])], extras=[cadena...], esq=dict(cadenas, accesos, entradas)?)
+Todas las coordenadas del esqueleto y del piso estan en pixeles de la foto correspondiente.
 """
 import math
 
@@ -31,12 +33,43 @@ def ajustar(pares):
     return f
 
 
+def semejanza(pares):
+    """Foto -> plano con escala uniforme, giro y traslacion (minimos cuadrados): para pares casi alineados, donde una
+    homografia extrapola mal."""
+    a = np.array([p for p, _ in pares], float)
+    b = np.array([q for _, q in pares], float)
+    ma, mb = a.mean(0), b.mean(0)
+    u, d, vt = np.linalg.svd((b - mb).T @ (a - ma))
+    r = u @ np.diag([1, np.sign(np.linalg.det(u @ vt))]) @ vt
+    k = (d * [1, np.sign(np.linalg.det(u @ vt))]).sum() / ((a - ma) ** 2).sum()
+    return lambda x, y: tuple(float(v) for v in k * r @ (np.array([x, y]) - ma) + mb)
+
+
+GENERICOS = ("Administracion", "Oficina", "Almacen", "Oficina PTC")   # se numeran por piso: Administracion 1, 2, ...
+
+
+def _numerar(salas):
+    """Nombres genericos con numero correlativo dentro del piso (el piso ya distingue las demas plantas)."""
+    cuenta = {}
+    out = []
+    for etq, centro, pts in salas:
+        if etq in GENERICOS:
+            cuenta[etq] = cuenta.get(etq, 0) + 1
+            etq = f"{etq} {cuenta[etq]}"
+        out.append((etq, centro, pts))
+    return out
+
+
 def _d2(n, xy):
     return (n["x_px"] - xy[0]) ** 2 + (n["y_px"] - xy[1]) ** 2
 
 
-def construir_piso(G, pab, p, z, esq, datos):
-    f0, f = ajustar(esq["pares"]), ajustar(datos["pares"])
+def construir_piso(G, pab, p, z, esq, datos, fijos):
+    esq_p = datos.get("esq")
+    base = {**esq, **esq_p} if esq_p else esq
+    aj = semejanza if datos.get("modelo") == "sim" else ajustar
+    f = aj(datos["pares"])
+    f0 = f if esq_p else ajustar(esq["pares"])
     pre = f"{pab}{p}_"
     en, corr = {}, []   # punto de la foto de referencia -> id; ids de pasillo
 
@@ -66,27 +99,27 @@ def construir_piso(G, pab, p, z, esq, datos):
                 G.arista(previo, i, "pasillo")
             previo = i
 
-    for vs in esq["cadenas"]:
+    for vs in base["cadenas"]:
         cadena(vs, f0)
     anc = {}
-    for clave, vs in esq["accesos"].items():
+    for clave, vs in base["accesos"].items():
         cadena(vs[:-1], f0)
-        xy = f0(*vs[-1])
+        xy = fijos.setdefault(clave, f0(*vs[-1]))
         i = f"{pre}{clave}"
-        G.nodo(i, xy[0], xy[1], z, p, pab, "ascensor" if clave == "asc" else "escalera",
-               f"Ascensor {pab}" if clave == "asc" else f"Escalera {clave[-1]}")
+        G.nodo(i, xy[0], xy[1], z, p, pab, "ascensor" if clave.startswith("asc") else "escalera",
+               f"Ascensor {pab}" if clave.startswith("asc") else f"Escalera {clave[-1]}")
         G.arista(en[vs[-2]], i, "pasillo")
         anc[(p, clave)] = i
 
-    base = list(corr)
+    base_ids = list(corr)
     for vs in datos.get("extras", []):
         cadena(vs, f, claves=False)
-        nuevos = [i for i in corr if i not in base]
-        a, b = min(((x, y) for x in nuevos for y in base), key=lambda t: _d2(G.nodos[t[0]], (G.nodos[t[1]]["x_px"], G.nodos[t[1]]["y_px"])))
+        nuevos = [i for i in corr if i not in base_ids]
+        a, b = min(((x, y) for x in nuevos for y in base_ids), key=lambda t: _d2(G.nodos[t[0]], (G.nodos[t[1]]["x_px"], G.nodos[t[1]]["y_px"])))
         G.arista(a, b, "pasillo")
-        base += nuevos
+        base_ids += nuevos
 
-    for j, (etq, centro, pts) in enumerate(datos["salas"]):
+    for j, (etq, centro, pts) in enumerate(_numerar(datos["salas"])):
         sid = f"{pre}rp{j:02d}"
         G.nodo(sid, *f(*centro), z, p, pab, "zona", etq)
         for n, pt in enumerate(pts or [None]):
@@ -98,31 +131,35 @@ def construir_piso(G, pab, p, z, esq, datos):
                                  etq if n == 0 else f"{etq} ({n + 1})")
     ids = list(corr)
     for clave, pos in (("inicio", 0), ("fin", None)):
-        if esq.get(clave):
-            i = en[esq[clave]]
+        if base.get(clave):
+            i = en[base[clave]]   # KeyError si la clave no es un vertice del esqueleto de ese piso
             ids.remove(i)
             ids.insert(0, i) if pos == 0 else ids.append(i)
-    return ids, anc, en
+    return ids, anc, en, base
 
 
 def construir(G, pab, esq, pisos):
     base_z = BASE_Z[pab]
     ids_por_piso, anc = {}, {}
+    f_ref = ajustar(esq["pares"])
+    fijos = {clave: f_ref(*vs[-1]) for clave, vs in esq["accesos"].items()}   # ejes verticales: posicion del esqueleto base
     for p in sorted(pisos):
-        ids, a, en = construir_piso(G, pab, p, base_z + (p - 1) * ALTO_PISO, esq, pisos[p])
+        ids, a, en, base = construir_piso(G, pab, p, base_z + (p - 1) * ALTO_PISO, esq, pisos[p], fijos)
         ids_por_piso[p] = ids
         anc.update(a)
         if p == 1:
-            for ext, pt in esq.get("entradas", []):
+            for k, (ext, pt, *nota) in enumerate(base.get("entradas", [])):
                 a_, b_ = G.nodos[ext], G.nodos[en[pt]]
-                pid = f"{pab}1_puerta_{ext}"
+                pid = f"{pab}1_puerta_{ext}" + (f"_{k + 1}" if k else "")
                 G.nodo(pid, (a_["x_px"] + b_["x_px"]) / 2, (a_["y_px"] + b_["y_px"]) / 2, base_z, 1, pab, "puerta",
                        f"Puerta de ingreso {pab} ({a_['etiqueta'] or ext})", ancho_m=puertas.ANCHO_DEF, escalon=False)
-                G.arista(ext, pid, "puerta")
-                G.arista(pid, en[pt], "puerta")
+                G.arista(ext, pid, "puerta", nota=nota[0] if nota else "")
+                G.arista(pid, en[pt], "puerta", nota=nota[0] if nota else "")
     for p in sorted(pisos)[:-1]:
-        for clave in esq["accesos"]:
-            if clave == "asc":
+        for clave in sorted({k for _, k in anc}):
+            if (p, clave) not in anc or (p + 1, clave) not in anc:
+                continue
+            if clave.startswith("asc"):
                 G.arista(anc[(p, clave)], anc[(p + 1, clave)], "ascensor", acc=True, w=ALTO_PISO + COSTO_ASCENSOR)
             else:
                 G.arista(anc[(p, clave)], anc[(p + 1, clave)], "escalera", acc=False, w=ALTO_PISO * COSTO_ESCALERA)

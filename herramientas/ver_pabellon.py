@@ -1,7 +1,7 @@
 """
 Vista de un pabellon modelado en detalle: todos los pisos en 2D + torre 3D + ruta de ejemplo.
 Uso:  python -m herramientas.ver_pabellon.py A            (ventana)         python -m herramientas.ver_pabellon.py I --png
-      python -m herramientas.ver_pabellon.py A --destino "Pabellon A p5 - Aula A-54"      (nombres: ver buscador.opciones_destino)
+      python -m herramientas.ver_pabellon.py A --destino "Pabellon A p5 - Salon A-54"      (nombres: ver buscador.opciones_destino)
 Si no existe ruta accesible, se muestra la mas corta CON escaleras y se avisa en el titulo.
 """
 import sys
@@ -18,7 +18,7 @@ from modelo import construccion
 from modelo.config import CAPTURAS
 
 ZE = 5.0
-DESTINO = {"A": "Pabellon A p5 - Aula A-54", "I": "Biblioteca p7 - CUB-54 (aprox)"}
+DESTINO = {"A": "Pabellon A p5 - Salon A-54", "I": "Biblioteca p7 - CUB-54"}
 NOMBRE = {"A": "Pabellon A + Aula Magna", "I": "Biblioteca (Pabellon I)"}
 NOMBRE_DEF = lambda p: f"Pabellon {p}"
 
@@ -88,7 +88,7 @@ def main():
             t = n["tipo"]
             if t == "zona":
                 ax.scatter([n["x_px"]], [n["y_px"]], s=14, c="#7b2cbf", zorder=4)
-                ax.text(n["x_px"], n["y_px"] - 1.2, n["etiqueta"].replace("Aula ", "")[:26], fontsize=5, ha="center",
+                ax.text(n["x_px"], n["y_px"] - 1.2, n["etiqueta"].replace("Salon ", "")[:26], fontsize=5, ha="center",
                         va="bottom", color="#4a1d7a")
             elif t == "puerta":
                 ax.scatter([n["x_px"]], [n["y_px"]], marker="D", s=14, c="#f28c1b", edgecolors="k", linewidths=.3, zorder=5)

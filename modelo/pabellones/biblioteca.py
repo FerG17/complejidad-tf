@@ -7,7 +7,7 @@ extremo sur. Las placas estan giradas 90 grados respecto de plano.png (el Contro
 accesible P23, al este): (u, v) son desplazamientos en la orientacion de la placa y _g() los lleva al plano.
 Medidas del plano: circulo de R = 51.5 px con centro (121, 620); la extension queda pegada al muro oeste (x = 61);
 los ascensores estan sobre los iconos amarillos de plano.png, (97,688) y (113,682).
-Los cubiculos marcados "(aprox)" pueden diferir en 1-2 numeros de las placas.
+La numeracion de los cubiculos interiores (pisos 6 y 7) puede diferir en 1-2 numeros de las placas.
 """
 import math
 
@@ -34,7 +34,7 @@ SALAS = {1: [
     ("anillo", "Sala de computadoras", 140, 0),
     ("anillo", "Sala de computadoras 30 alumnos", 40, 0),
     ("anillo", "Control (ingreso sur)", 90, 0),
-    ("anexo", "Libreria (25)", 0.45, -0.28),
+    ("anexo", "Libreria", 0.45, -0.28),
     ("anexo", "SSHH", -0.45, -0.28),
 ], 2: [
     ("centro", "Hall central (vacio con piso)", 0, 0),
@@ -78,20 +78,38 @@ SALAS = {1: [
 # p6: cubiculos del anexo CUB-02..09 (u, dv)
 CUB6_ANEXO = {2: (-0.2, -0.45), 7: (0.1, -0.45), 8: (0.45, -0.45), 3: (-0.2, -0.28),
               6: (0.1, -0.28), 9: (0.45, -0.28), 4: (-0.1, -0.12), 5: (0.12, -0.12)}
-SALAS[6] = ([("anexo", "SSHH", -0.45, -0.28), ("anillo", "Modulo de atencion", 235, 0), ("centro", "CUB-35 (aprox)", 0, 0)]
+SALAS[6] = ([("anexo", "SSHH", -0.45, -0.28), ("anillo", "Modulo de atencion", 235, 0), ("centro", "CUB-35", 0, 0)]
             + [("anillo", f"CUB-{10 + k:02d}", (320 + 265 / 16 * k) % 360, 0) for k in range(17)]     # CUB-10..26
-            + [("interior", f"CUB-{27 + k:02d} (aprox)", (255 - 45 * k) % 360, 0) for k in range(8)]  # CUB-27..34
+            + [("interior", f"CUB-{27 + k:02d}", (255 - 45 * k) % 360, 0) for k in range(8)]  # CUB-27..34
             + [("anexo", f"CUB-{n:02d}", u, dv) for n, (u, dv) in CUB6_ANEXO.items()])
 SALAS[7] = ([("anexo", "SSHH", -0.45, -0.28), ("anexo", "Terraza (abierta)", 0.2, -0.35),
              ("anillo", "Modulo de atencion", 262, 0)]
             + [("anillo", f"CUB-{37 + k:02d}", (285 + 300 / 12 * k) % 360, 0) for k in range(13)]     # CUB-37..49
-            + [("interior", f"CUB-{50 + k:02d} (aprox)", (235 - 47 * k) % 360, 0) for k in range(7)]   # CUB-50..56
-            + [("centro", "CUB-57/58 (aprox)", 0, 0)])
+            + [("interior", f"CUB-{50 + k:02d}", (235 - 47 * k) % 360, 0) for k in range(7)]   # CUB-50..56
+            + [("centro", "CUB-57", 0, 0), ("centro", "CUB-58", 0, 0)])
+
+
+# Piso 7: puertas marcadas por el equipo en la placa (foto 1600x1200; circulo de ~345 x 325 px centrado en (835, 705))
+PUERTAS_P7 = [(602, 308), (640, 319), (574, 398), (1131, 400), (1000, 430), (1061, 468), (872, 506), (786, 562), (926, 562),
+              (1068, 602), (636, 620), (840, 660), (1084, 636), (868, 661), (1028, 777), (634, 802), (686, 784), (1082, 802),
+              (858, 870), (752, 910), (787, 920), (943, 911)]
 
 
 def _g(u, v):
     """Desplazamiento (u derecha, v abajo, en R, orientacion de la placa) -> pixel de plano.png (giro de -90 grados)."""
     return CX + v * R, CY - u * R
+
+
+def _puerta_p7(xy, usadas):
+    """Puerta marcada por el equipo mas cercana (a menos de 8 px de plano) a la sala en `xy`, o None."""
+    cand = [(math.hypot(_g((px - 835) / 345, (py - 705) / 325)[0] - xy[0], _g((px - 835) / 345, (py - 705) / 325)[1] - xy[1]), k)
+            for k, (px, py) in enumerate(PUERTAS_P7) if k not in usadas]
+    if not cand or min(cand)[0] > 8:
+        return None
+    d, k = min(cand)
+    usadas.add(k)
+    px, py = PUERTAS_P7[k]
+    return _g((px - 835) / 345, (py - 705) / 325)
 
 
 def _pol(ang_deg, frac):
@@ -157,7 +175,7 @@ def construir(G):
         G.arista(f"{pre}hall", f"{pre}o{14:02d}", "pasillo")
         anc[(piso, "asc1")] = f"{pre}asc1"
         anc[(piso, "asc2")] = f"{pre}asc2"
-        usados = set()
+        usados, p7 = set(), set()
         for tipo, etq, a, dv in SALAS[piso]:
             zid = f"{pre}Z{len(usados):02d}"
             usados.add(zid)
@@ -178,7 +196,8 @@ def construir(G):
                 continue
             abierta = etq.startswith(("Hall", "Sala de lectura", "Mediateca", "Modulo", "Counter", "Fotocopia auto",
                                       "Control", "Terraza", "Estante", "Libreria"))
-            puertas.poner_sala(G, ancla, zid, etq, (x, y), z, piso, "I", puerta=not abierta)
+            pxy = _puerta_p7((x, y), p7) if piso == 7 and not abierta else None
+            puertas.poner_sala(G, ancla, zid, etq, (x, y), z, piso, "I", puerta=not abierta, puerta_xy=pxy)
     for piso in range(1, PISOS):
         for s in ("esc1", "esc2"):
             G.arista(anc[(piso, s)], anc[(piso + 1, s)], "escalera", acc=False, w=ALTO_PISO * COSTO_ESCALERA)

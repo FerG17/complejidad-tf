@@ -18,24 +18,29 @@ from pathlib import Path
 from modelo import exterior
 from modelo.config import DATOS
 from modelo.grafo import Grafo
-from modelo.pabellones import biblioteca, corredor, e_plano, fg_plano, h_piso4, pabellon_a, planta_libre, plano_foto
+from modelo.pabellones import a_plano, b_plano, biblioteca, c_plano, d_plano, e_plano, fg_plano, h_plano, j_plano, planta_libre, plano_foto
 
-ESPECIALES = {"A": pabellon_a.construir, "I": biblioteca.construir,
+ESPECIALES = {"A": partial(plano_foto.construir, pab="A", esq=a_plano.ESQ, pisos=a_plano.PISOS), "I": biblioteca.construir,
               "K": planta_libre.construir_k, "L": planta_libre.construir_l,
+              "H": partial(plano_foto.construir, pab="H", esq=h_plano.ESQ, pisos=h_plano.PISOS),
+              "B": partial(plano_foto.construir, pab="B", esq=b_plano.ESQ, pisos=b_plano.PISOS),
+              "C": partial(plano_foto.construir, pab="C", esq=c_plano.ESQ, pisos=c_plano.PISOS),
+              "D": partial(plano_foto.construir, pab="D", esq=d_plano.ESQ, pisos=d_plano.PISOS),
+              "J": partial(plano_foto.construir, pab="J", esq=j_plano.ESQ, pisos=j_plano.PISOS),
               "E": partial(plano_foto.construir, pab="E", esq=e_plano.ESQ, pisos=e_plano.PISOS),
               "F": partial(plano_foto.construir, pab="F", esq=fg_plano.ESQ_F, pisos=fg_plano.PISOS_F),
               "G": partial(plano_foto.construir, pab="G", esq=fg_plano.ESQ_G, pisos=fg_plano.PISOS_G)}
-HUELLAS = {"I": biblioteca.HUELLAS, "H": h_piso4.HUELLAS, "E": e_plano.HUELLAS, "F": fg_plano.HUELLAS_F,
+HUELLAS = {"I": biblioteca.HUELLAS, "H": h_plano.HUELLAS, "E": e_plano.HUELLAS, "F": fg_plano.HUELLAS_F,
            "G": fg_plano.HUELLAS_G, **planta_libre.HUELLAS}   # explicitas; las demas salen de los nodos
-CONSTRUCTORES = {p: ESPECIALES.get(p) or partial(corredor.construir, pab=p) for p in "ABCDEFGHIJKL"}
+CONSTRUCTORES = {p: ESPECIALES[p] for p in "ABCDEFGHIJKL"}
 
 # Pasillos entre pabellones (por piso): (pab1, t1, pab2, t2, nota)
 PASAJES = [
     ("J", 1.0, "B", 0.0, "supuesto: pasillo J-B a nivel en todos los pisos (indicado por el equipo)"),
     ("E", 1.0, "F", 0.0, "supuesto: E-F continuo en todos los pisos"),
     ("F", 1.0, "G", 0.0, "supuesto: F-G continuo (un solo pasillo con su escalera)"),
-    ("D", 0.16, "C", 0.185, "confirmado por el equipo: plataforma plana C-D en los pisos 1 a 5 (en el hueco entre ambos "
-                            "hay escaleras); posicion aproximada en el extremo norte"),
+    ("D", 0.0, "C", 0.0, "confirmado por el equipo: plataforma plana C-D en los pisos 1 a 5 (en el hueco entre ambos "
+                         "hay escaleras); posicion aproximada en el extremo norte"),
 ]
 
 # Zonas exteriores: (id, etiqueta, nodo exterior al que se cuelgan, dx, dy en px)

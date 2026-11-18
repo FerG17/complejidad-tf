@@ -1,0 +1,72 @@
+"""
+Pabellon C, pisos 1 a 5, reconstruido de las placas fotografiadas y anotadas por el equipo.
+Las fotos estan giradas 90 grados en sentido antihorario respecto de plano.png (arriba de la foto = oeste, hacia D; derecha =
+norte). Marco de referencia: foto del piso 3, a escala 0.153 px de plano por px de foto (el ancho de la fila superior coincide
+con los 109 px que mide el pabellon de norte a sur). Los demas pisos se registran con la escalera sureste y el bloque aislado
+de las aulas del extremo (27/28, 37/38...). Las escaleras del hueco C-D estan en todos los pisos; el enlace con D es el
+extremo superior del pasillo norte-sur.
+"""
+from modelo.pabellones import plano_foto
+
+_P = [((1165, 395), (162, 283)), ((455, 395), (162, 391.6)), ((1165, 830), (228.6, 283))]
+_F3 = plano_foto.ajustar(_P)
+REF = dict(e=(610, 905), bi=(200, 645), bd=(445, 1000))
+
+
+def _pares(**pts):
+    return [(v, _F3(*REF[k])) for k, v in pts.items()]
+
+
+ESQ = dict(
+    pares=_P,
+    cadenas=[[(455, 610), (515, 610), (610, 610), (725, 610), (820, 610), (935, 610), (1040, 610), (1120, 610)],
+             [(515, 610), (515, 720), (515, 830), (515, 925)],
+             [(455, 395), (455, 500), (455, 610), (455, 720), (455, 830), (455, 925), (515, 925)],
+             [(935, 610), (935, 500), (935, 420), (935, 350)]],
+    accesos={"esc1": [(515, 925), (560, 925), (610, 905)],
+             "esc2": [(935, 350), (880, 340), (840, 325)],
+             "esc3": [(935, 350), (1000, 330), (1050, 310)]},
+    inicio=(935, 350), fin=(1120, 610),
+    entradas=[("P29", (515, 925)), ("P29w", (935, 420))])
+
+PISOS = {
+    1: dict(
+        modelo="sim",
+        pares=_pares(e=(665, 925), bi=(248, 672), bd=(498, 1025)),
+        salas=[("Salon C-17", (705, 460), [(652, 598)]), ("Salon C-16", (827, 450), [(818, 596)]),
+               ("Salon C-15", (1065, 490), [(1044, 607)]), ("Salon/Capstone ing. industrial C-14", (1250, 505), [(1201, 610)]),
+               ("Almacen de quimica C-10", (640, 705), [(726, 705)]), ("Salon/Lab. quimica C-11", (828, 820), [(757, 672)]),
+               ("Salon C-12", (1050, 720), [(986, 680)]), ("Salon C-13", (1210, 770), [(1122, 684)]),
+               ("Almacen", (1250, 655), [(1220, 676)]), ("Salon C-18", (357, 750), [(486, 698)]),
+               ("Salon C-19", (367, 985), [(480, 880)]), ("Administracion", (1145, 330), [(1275, 356)])]),
+    2: dict(
+        modelo="sim",
+        pares=_pares(e=(612, 915), bi=(197, 652), bd=(440, 1000)),
+        salas=[("Salon C-26", (565, 465), [(544, 572)]), ("Salon C-25", (775, 490), [(754, 566)]),
+               ("Almacen", (975, 460), [(980, 564)]), ("SSHH mujeres", (1060, 450), [(1036, 567)]),
+               ("Almacen UAV", (1185, 450), [(1086, 567)]), ("Almacen marketing", (1195, 600), [(1148, 578)]),
+               ("Almacen", (1185, 720), [(1148, 648)]), ("Salon C-21", (700, 730), [(592, 650)]),
+               ("Salon C-22", (925, 715), [(820, 647)]), ("SSHH hombres", (1065, 735), [(1050, 646)]),
+               ("Salon C-27", (285, 740), [(448, 685)]), ("Salon C-28", (285, 880), [(440, 867)])]),
+    3: dict(
+        pares=_P,
+        salas=[("Salon/Lab. computo C-36", (578, 470), [(492, 566)]), ("Salon/Lab. computo C-35", (810, 480), [(722, 570)]),
+               ("Salon C-34", (1065, 490), [(1001, 578)]), ("Salon C-31", (697, 725), [(609, 650)]),
+               ("Salon C-32", (875, 700), [(820, 649)]), ("Salon C-33", (1070, 720), [(1040, 648)]),
+               ("Salon C-37", (305, 745), [(456, 670)]), ("Salon C-38", (300, 915), [(438, 849)])]),
+    4: dict(
+        modelo="sim",
+        pares=_pares(e=(680, 935), bi=(245, 685), bd=(505, 1060)),
+        salas=[("Salon/Lab. computo C-45", (630, 510), [(720, 602)]), ("Salon/Lab. computo C-44", (845, 495), [(942, 604)]),
+               ("Salon/Capstone ing. sistemas C-43", (1048, 475), [(1016, 582)]), ("Sala de servidores", (1170, 520), [(1142, 606)]),
+               ("Salon/Lab. computo C-41", (765, 770), [(665, 684)]), ("SSHH mujeres", (922, 750), [(889, 680)]),
+               ("Sala de practicantes", (1030, 740), [(937, 680), (1101, 680)]), ("SSHH hombres", (1170, 735), [(1139, 681)]),
+               ("Salon/Lab. computo C-48", (355, 790), [(504, 714)]), ("Salon/Lab. computo C-49", (355, 910), [(496, 903)])]),
+    5: dict(
+        modelo="sim",
+        pares=_pares(e=(730, 920), bi=(290, 662), bd=(535, 1030)),
+        salas=[("Salon/Laboratorio", (655, 480), [(698, 581)]), ("Salon C-56", (905, 445), [(860, 574)]),
+               ("Salon C-55", (1125, 425), [(1056, 544)]), ("Salon C-51", (755, 700), [(700, 658)]),
+               ("Salon C-52", (920, 720), [(926, 656)]), ("Salon C-57", (365, 745), [(540, 683)]),
+               ("Salon C-58", (415, 940), [(534, 878)]), ("Administracion", (1240, 620), [(1058, 614)])]),
+}

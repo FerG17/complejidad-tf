@@ -6,7 +6,7 @@ from modelo.config import ESCALA
 
 
 def _nombre(n):
-    """Nombre legible y buscable de cada nodo (ej. 'I p7 - CUB-54 (aprox)', 'Ascensor 1 (I) p3')."""
+    """Nombre legible y buscable de cada nodo (ej. 'I p7 - CUB-54', 'Ascensor 1 (I) p3')."""
     t, e, p, pis = n["tipo"], n["etiqueta"], n["pab"], n["piso"]
     if not p:
         if t == "interseccion":
