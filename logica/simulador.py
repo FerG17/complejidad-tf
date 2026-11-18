@@ -8,7 +8,6 @@ Barrera:  mientras camina, se bloquea el siguiente tramo y se recalcula A* desde
 Ascensores fuera de servicio: se pueden marcar en cualquier momento (antes de iniciar o caminando); persisten
           entre recorridos hasta reiniciar. Si la ruta actual los usa, se recalcula desde el nodo actual.
 """
-import math
 
 from logica import algoritmos as alg
 from logica import ascensores

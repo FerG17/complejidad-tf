@@ -11,10 +11,10 @@ clic derecho = destino. Atajos: espacio = iniciar, b = barrera en el tramo, a = 
 import sys
 from pathlib import Path
 
-import pyqtgraph as pg
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from interfaz.vista import COL_ASC, COL_ESC, COL_PISO, Vista
+from interfaz.estilo import COL_ASC, COL_ESC, COL_PISO, preparar
+from interfaz.vista import Vista
 from logica import ascensores
 from logica import buscador
 from logica.simulador import Simulador
@@ -387,20 +387,6 @@ class App(QtWidgets.QMainWindow):
     def closeEvent(self, ev):
         self.timer.stop()
         super().closeEvent(ev)
-
-
-def preparar(app):
-    app.setStyle("Fusion")
-    app.styleHints().setColorScheme(QtCore.Qt.ColorScheme.Light)
-    pal = QtGui.QPalette()
-    for rol, col in ((QtGui.QPalette.Window, "#f3f4f6"), (QtGui.QPalette.WindowText, "#111111"),
-                     (QtGui.QPalette.Base, "#ffffff"), (QtGui.QPalette.AlternateBase, "#f3f4f6"),
-                     (QtGui.QPalette.Text, "#111111"), (QtGui.QPalette.Button, "#e5e7eb"),
-                     (QtGui.QPalette.ButtonText, "#111111"), (QtGui.QPalette.Highlight, "#2563eb"),
-                     (QtGui.QPalette.HighlightedText, "#ffffff"), (QtGui.QPalette.PlaceholderText, "#7a7f87")):
-        pal.setColor(rol, QtGui.QColor(col))
-    app.setPalette(pal)
-    pg.setConfigOptions(antialias=True)
 
 
 def main():

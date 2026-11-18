@@ -12,87 +12,28 @@ La numeracion de los cubiculos interiores (pisos 6 y 7) puede diferir en 1-2 num
 import math
 
 from modelo import puertas
+from modelo.pabellones import datos
 from modelo.config import ALTO_PISO, BASE_Z, COSTO_ASCENSOR, COSTO_ESCALERA, ESCALA, ESPACIADO
 
-CX, CY, R = 121.0, 620.0, 51.5
-N_ANILLO, N_INTERIOR = 24, 12
-R_ANILLO, R_INTERIOR = 0.68, 0.42     # fracciones de R
-V_ANEXO = -1.07                       # pasillo del anexo (en R, orientacion de la placa)
-U_ANEXO = (-0.95, 0.95)
-DV_ANEXO = 0.3                        # las salas del anexo se acercan al pasillo: la extension del plano es angosta
-OFF_ESC = 4                           # px que la escalera sobresale del pasillo del anexo
-ASC1, ASC2, HALL = (98.0, 684.0), (113.0, 680.0), (105.0, 677.0)
+_D = datos.crudo("I")
+_G = _D["geometria"]
+CX, CY, R = _G["CX"], _G["CY"], _G["R"]
+N_ANILLO, N_INTERIOR = _G["N_ANILLO"], _G["N_INTERIOR"]
+R_ANILLO, R_INTERIOR = _G["R_ANILLO"], _G["R_INTERIOR"]     # fracciones de R
+V_ANEXO = _G["V_ANEXO"]                                       # pasillo del anexo (en R, orientacion de la placa)
+U_ANEXO = _G["U_ANEXO"]
+DV_ANEXO = _G["DV_ANEXO"]            # las salas del anexo se acercan al pasillo: la extension del plano es angosta
+OFF_ESC = _G["OFF_ESC"]              # px que la escalera sobresale del pasillo del anexo
+ASC1, ASC2, HALL = _G["ASC1"], _G["ASC2"], _G["HALL"]
 N_ANEXO = max(int(math.ceil((U_ANEXO[1] - U_ANEXO[0]) * R * ESCALA / ESPACIADO)) + 1, 8)
 NODO_ENLACE_K = f"a{N_ANEXO - 1:02d}"  # extremo norte del anexo: escalera de emergencia y plataforma hacia K
 
-# ("anillo"|"interior"|"anexo"|"centro", etiqueta, angulo_grados | u, dv_anexo)
+# {piso: [("anillo"|"interior"|"anexo"|"centro", etiqueta, angulo_grados | u, dv_anexo)]}
 # angulos: y hacia abajo, 0 = este, 90 = sur, 180 = oeste, 270 = norte
-SALAS = {1: [
-    ("centro", "Hall de ingreso", 0, 0),
-    ("interior", "Counter de atencion", 268, 0),
-    ("interior", "Fotocopia auto-asistida", 300, 0),
-    ("anillo", "Sala de computadoras", 140, 0),
-    ("anillo", "Sala de computadoras 30 alumnos", 40, 0),
-    ("anillo", "Control (ingreso sur)", 90, 0),
-    ("anexo", "Libreria", 0.45, -0.28),
-    ("anexo", "SSHH", -0.45, -0.28),
-], 2: [
-    ("centro", "Hall central (vacio con piso)", 0, 0),
-    ("interior", "Hall central", 268, 0),
-    ("anillo", "Oficina / Asesoria Arizona", 212, 0),
-    ("anillo", "Mediateca", 180, 0),
-    ("anillo", "Sala de red", 20, 0),
-    ("anillo", "Almacen / Of. Arizona", 105, 0),
-    ("anexo", "SSHH", -0.45, -0.28),
-    ("anexo", "Sala de capacitacion", -0.05, -0.28),
-    ("anexo", "Oficina Editorial UPC", 0.25, -0.28),
-    ("anexo", "Oficina coordinador CI", 0.45, -0.28),
-    ("anexo", "Direccion de gestion del conocimiento", 0.65, -0.28),
-], 3: [
-    ("interior", "Modulos de busqueda", 250, 0),
-    ("anillo", "Modulo de atencion central", 270, 0),
-    ("anillo", "Sala de lectura", 90, 0),
-    ("anexo", "SSHH", -0.45, -0.28),
-    ("anexo", "Sala Bloomberg", -0.05, -0.28),
-    ("anexo", "Almacen de libros", 0.12, -0.28),
-    ("anexo", "Cubiculo", 0.3, -0.28),
-    ("anexo", "Jefatura corporativa centros de informacion", 0.6, -0.28),
-], 4: [
-    ("interior", "Hall", 268, 0),
-    ("anillo", "Sala de lectura", 90, 0),
-    ("anexo", "SSHH", -0.45, -0.28),
-    ("anexo", "Analisis de informacion", -0.05, -0.28),
-    ("anexo", "Apoyo de produccion temporal", 0.2, -0.28),
-    ("anexo", "Gestion de coleccion", 0.5, -0.28),
-    ("anexo", "Jefe de apoyo de produccion temporal", 0.62, -0.28),
-], 5: [
-    ("interior", "Hall", 268, 0),
-    ("anillo", "Modulo de atencion central", 275, 0),
-    ("anillo", "Sala de lectura", 90, 0),
-    ("anexo", "SSHH", -0.45, -0.28),
-    ("anexo", "Estante compacto / hemeroteca", 0.0, -0.28),
-    ("anexo", "Sala Mac", 0.33, -0.28),
-    ("anexo", "Fotocopias Ricoh", 0.55, -0.28),
-], 6: [], 7: []}
-
-# p6: cubiculos del anexo CUB-02..09 (u, dv)
-CUB6_ANEXO = {2: (-0.2, -0.45), 7: (0.1, -0.45), 8: (0.45, -0.45), 3: (-0.2, -0.28),
-              6: (0.1, -0.28), 9: (0.45, -0.28), 4: (-0.1, -0.12), 5: (0.12, -0.12)}
-SALAS[6] = ([("anexo", "SSHH", -0.45, -0.28), ("anillo", "Modulo de atencion", 235, 0), ("centro", "CUB-35", 0, 0)]
-            + [("anillo", f"CUB-{10 + k:02d}", (320 + 265 / 16 * k) % 360, 0) for k in range(17)]     # CUB-10..26
-            + [("interior", f"CUB-{27 + k:02d}", (255 - 45 * k) % 360, 0) for k in range(8)]  # CUB-27..34
-            + [("anexo", f"CUB-{n:02d}", u, dv) for n, (u, dv) in CUB6_ANEXO.items()])
-SALAS[7] = ([("anexo", "SSHH", -0.45, -0.28), ("anexo", "Terraza (abierta)", 0.2, -0.35),
-             ("anillo", "Modulo de atencion", 262, 0)]
-            + [("anillo", f"CUB-{37 + k:02d}", (285 + 300 / 12 * k) % 360, 0) for k in range(13)]     # CUB-37..49
-            + [("interior", f"CUB-{50 + k:02d}", (235 - 47 * k) % 360, 0) for k in range(7)]   # CUB-50..56
-            + [("centro", "CUB-57", 0, 0), ("centro", "CUB-58", 0, 0)])
-
+SALAS = {int(p): [tuple(s) for s in v] for p, v in _D["salas"].items()}
 
 # Piso 7: puertas marcadas por el equipo en la placa (foto 1600x1200; circulo de ~345 x 325 px centrado en (835, 705))
-PUERTAS_P7 = [(602, 308), (640, 319), (574, 398), (1131, 400), (1000, 430), (1061, 468), (872, 506), (786, 562), (926, 562),
-              (1068, 602), (636, 620), (840, 660), (1084, 636), (868, 661), (1028, 777), (634, 802), (686, 784), (1082, 802),
-              (858, 870), (752, 910), (787, 920), (943, 911)]
+PUERTAS_P7 = _D["puertas_p7"]
 
 
 def _g(u, v):
@@ -125,7 +66,7 @@ def _circulo(cx, cy, r, lados=40):
 HUELLAS = [_circulo(CX, CY, R + 0.5), [(61, 560), (98, 560), (98, 681), (61, 681)], [(94, 672), (118, 672), (118, 692), (94, 692)]]
 
 
-PISOS = 7
+PISOS = _D["pisos"]
 
 
 def construir(G):

@@ -1,0 +1,102 @@
+{
+  "pabellon": "K",
+  "nota": "Pabellones K y L: constructor y datos de ambos. Pasillos y ramales son poligonales en pixeles de plano.png; las salas, escaleras y ascensores se colocaron a mano a partir de las placas de evacuacion y mapa de riesgos. K: pisos 1, 2, 3 y 5 leidos de las placas; el piso 4 repite el 3. Sin ascensor: se llega en silla de ruedas por P26/P27 (piso 1) y por la plataforma plana que lo une con la Biblioteca en los pisos 1 a 5. L: pisos 1 y 2 leidos; los pisos 3 a 5 repiten el 2. Dos ascensores propios, tres escaleras, ingresos P4/P3 y el ascensor exterior A4. El subsuelo no se modela. Los recintos \"(aprox)\" no tienen rotulo legible (nombre y posicion estimados); precision geometrica ~2-3 m.",
+  "huellas": [[[61, 447], [75, 446], [148, 496], [157, 503], [89, 566], [61, 566]]],
+  "escaleras": {
+    "N": {
+      "pisos": [1, 2, 3, 4, 5],
+      "xy": [102, 469]
+    },
+    "NE": {
+      "pisos": [1, 2, 3, 4],
+      "xy": [133, 483]
+    },
+    "S": {
+      "pisos": [1, 2, 3, 4, 5],
+      "xy": [77, 557]
+    }
+  },
+  "piso_plantilla": {
+    "1": "p1",
+    "2": "p2",
+    "3": "p3",
+    "4": "p3",
+    "5": "p5"
+  },
+  "pisos": 5,
+  "plantillas": {
+    "p1": {
+      "entradas": [["P27", [100.6, 518.4]], ["P26", [125.4, 514.0]]],
+      "pasillo": [
+        [75.9, 551.9],
+        [78.8, 538.0],
+        [82.4, 524.9],
+        [87.5, 511.8],
+        [93.3, 500.2],
+        [100.6, 492.2],
+        [110.8, 485.6],
+        [121.0, 486.3]
+      ],
+      "ramales": {
+        "hall": [[87.5, 511.8], [97.7, 515.0], [109.3, 516.9], [119.5, 513.3], [123.9, 510.4]],
+        "norte": [[100.6, 492.2], [101.5, 481.2], [102.1, 471.0]]
+      },
+      "salas": [["Hall principal (26)", [115.2, 511.8], false, "hall"], ["Cocina-almacen", [68.6, 465.2], true, "norte"]]
+    },
+    "p2": {
+      "entradas": [],
+      "pasillo": [
+        [76.8, 547.3],
+        [80.6, 540.6],
+        [83.5, 533.8],
+        [85.7, 524.0],
+        [89.5, 508.9],
+        [92.4, 500.0],
+        [95.0, 492.0],
+        [97.3, 482.6],
+        [98.4, 475.8]
+      ],
+      "ramales": {
+        "cocina": [[97.3, 482.3], [87.6, 479.5], [78.1, 476.5], [67.6, 473.4], [67.3, 465.0]],
+        "comedor": [[92.4, 500.0], [82.2, 499.4], [71.4, 497.1]],
+        "ne": [[97.3, 482.3], [109.2, 484.6], [120.0, 485.5], [128.0, 482.6]]
+      },
+      "salas": [
+        ["Cocina concesionario", [72.7, 457.6], true, "cocina"],
+        ["Almacen 1", [90.9, 469.7], true, "pasillo"],
+        ["Comedor 49 sillas", [71.4, 497.4], false, "comedor"],
+        ["Terraza 24 sillas", [101.3, 485.9], false, "ne"]
+      ]
+    },
+    "p3": {
+      "entradas": [],
+      "pasillo": [[80.4, 555.2], [83.9, 544.7], [84.9, 530.6], [87.4, 516.6], [90.9, 502.5], [94.2, 488.5], [96.6, 478.6]],
+      "ramales": {
+        "ne": [[94.2, 488.5], [105.7, 488.5], [117.0, 485.9], [131.0, 482.8]],
+        "norte": [[96.6, 478.6], [90.2, 471.6], [83.2, 464.6]]
+      },
+      "salas": [
+        ["SSHH hombres", [67.7, 530.6], true, "pasillo"],
+        ["SSHH mujeres", [67.7, 544.7], true, "pasillo"],
+        ["Hall", [88.8, 541.9], false, "pasillo"],
+        ["Comedor", [86.3, 501.1], false, "pasillo"],
+        ["Terraza", [100.4, 507.3], false, "pasillo"],
+        ["Ambiente norte", [73.4, 454.7], true, "norte"]
+      ]
+    },
+    "p5": {
+      "entradas": [],
+      "pasillo": [[84.1, 551.7], [87.1, 539.2], [87.9, 514.2], [87.5, 489.2], [87.5, 471.6], [87.5, 462.3]],
+      "ramales": {
+
+      },
+      "salas": [
+        ["Sala de reuniones", [70.6, 452.9], true, "pasillo"],
+        ["Oficina abierta", [73.1, 489.2], false, "pasillo"],
+        ["SSHH hombres", [71.9, 530.4], true, "pasillo"],
+        ["SSHH mujeres", [71.9, 544.8], true, "pasillo"],
+        ["Hall", [87.5, 537.9], false, "pasillo"]
+      ]
+    }
+  }
+}

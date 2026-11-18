@@ -8,66 +8,14 @@ barreras) se actualiza en cada paso. Mouse en el 3D: arrastrar = rotar, rueda = 
 import numpy as np
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-from OpenGL import GL
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from modelo.config import ESCALA
+from interfaz.estilo import (CAPA, COL_ASC, COL_COLUMNA, COL_ESC, COL_MURO, COL_TECHO, COL_TIPO, FONDO_3D,
+                             MARGEN_HUELLA, PESO_CLIC, PISOS_MAX, SUELO_PX, VACIO3, VERT, ZEXAG_CAMPUS, ALTO_PISO, Plano, col_piso, qcolor, rgba)
 from interfaz.geometria import Malla, rectangulo
 from modelo.construccion import HUELLAS
 
-CAPA = {GL.GL_DEPTH_TEST: False, GL.GL_BLEND: True, GL.GL_CULL_FACE: False,
-        "glBlendFuncSeparate": (GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA, GL.GL_ONE, GL.GL_ONE_MINUS_SRC_ALPHA)}
-
-ZEXAG_CAMPUS = 2.0
-ALTO_PISO = 3.5
-COL_PISO = ["#1f77b4", "#2ca02c", "#ff7f0e", "#9467bd", "#d62728", "#8c564b", "#17becf"]
-COL_EXT = "#7a869a"
-COL_ESC, COL_ASC = "#d62828", "#1b9e3e"
-COL_COLUMNA, COL_MURO, COL_TECHO = "#334155", "#64748b", "#94a3b8"
-VERT = ("escalera", "escalera_ext", "ascensor")
-COL_TIPO = {"pasillo": "#9aa7b8", "peatonal": "#3b6fb6", "rampa": "#d4a017", "puerta": "#f28c1b",
-            "pasaje": "#2a9d8f", "escalera": COL_ESC, "escalera_ext": COL_ESC, "ascensor": COL_ASC}
-PESO_CLIC = {"zona": 1.0, "ascensor": 1.0, "escalera": 1.0, "entrada_accesible": 1.0, "entrada_campus": 1.0,
-             "puerta": 1.3}
-FONDO_3D = (247, 249, 252)
-PISOS_MAX = 7
-MARGEN_HUELLA = 1.5
-SUELO_PX = (20, 790, 250, 780)
-
-
-def col_piso(p):
-    return COL_EXT if p <= 0 else COL_PISO[(p - 1) % len(COL_PISO)]
-
-
-def rgba(hexa, a=1.0):
-    c = QtGui.QColor(hexa)
-    return (c.redF(), c.greenF(), c.blueF(), a)
-
-
-def qcolor(hexa, a=1.0):
-    c = QtGui.QColor(hexa)
-    c.setAlphaF(a)
-    return c
-
-
-class Plano(pg.PlotWidget):
-    """PlotWidget que conserva la proporcion del plano (sin franjas blancas)."""
-    RELACION = 503 / 740
-
-    def __init__(self):
-        super().__init__(background="w")
-        sp = self.sizePolicy()
-        sp.setHeightForWidth(True)
-        self.setSizePolicy(sp)
-
-    def hasHeightForWidth(self):
-        return True
-
-    def heightForWidth(self, w):
-        return int(w * self.RELACION) + 26
-
-
-VACIO3 = np.empty((0, 3))
 
 
 class Vista(QtCore.QObject):

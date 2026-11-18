@@ -6,12 +6,12 @@ K: pisos 1, 2, 3 y 5 leidos de las placas; el piso 4 repite el 3. Sin ascensor: 
 P26/P27 (piso 1) y por la plataforma plana que lo une con la Biblioteca en los pisos 1 a 5.
 L: pisos 1 y 2 leidos; los pisos 3 a 5 repiten el 2. Dos ascensores propios, tres escaleras, ingresos P4/P3 y el
 ascensor exterior A4. El subsuelo no se modela.
-Los recintos "(aprox)" no tienen rotulo legible (nombre y posicion estimados); precision geometrica ~2-3 m.
+Los recintos sin rotulo legible tienen nombre y posicion estimados; precision geometrica ~2-3 m. Datos en datos/pabellones/K.json y L.json.
 """
 import math
 
 from modelo import puertas
-from modelo.pabellones import biblioteca
+from modelo.pabellones import biblioteca, datos
 from modelo.config import ALTO_PISO, BASE_Z, COSTO_ASCENSOR, COSTO_ESCALERA, ESCALA, ESPACIADO
 
 def _muestrear(pts):
@@ -134,71 +134,9 @@ def construir_l(G):
         G.arista("A4", anc_a[1][nom], "puerta")
 
 
-# huellas 3D (px de plano.png): contorno gris de cada edificio en el plano, como poligono convexo
-HUELLAS = {"K": [[(61, 447), (75, 446), (148, 496), (157, 503), (89, 566), (61, 566)]],
-           "L": [[(460, 294), (479, 290), (745, 291), (746, 295), (737, 352), (509, 352), (460, 300)]]}
-
-DATOS_K = {'escaleras': {'N': {'pisos': (1, 2, 3, 4, 5), 'xy': (102, 469)},
-                         'NE': {'pisos': (1, 2, 3, 4), 'xy': (133, 483)},
-                         'S': {'pisos': (1, 2, 3, 4, 5), 'xy': (77, 557)}},
-           'piso_plantilla': {1: 'p1', 2: 'p2', 3: 'p3', 4: 'p3', 5: 'p5'},
-           'pisos': 5,
-           'plantillas': {'p1': {'entradas': [('P27', (100.6, 518.4)), ('P26', (125.4, 514.0))],
-                                 'pasillo': [(75.9, 551.9), (78.8, 538.0), (82.4, 524.9), (87.5, 511.8), (93.3, 500.2),
-                                             (100.6, 492.2), (110.8, 485.6), (121.0, 486.3)],
-                                 'ramales': {'hall': [(87.5, 511.8), (97.7, 515.0), (109.3, 516.9), (119.5, 513.3),
-                                                      (123.9, 510.4)],
-                                             'norte': [(100.6, 492.2), (101.5, 481.2), (102.1, 471.0)]},
-                                 'salas': [('Hall principal (26)', (115.2, 511.8), False, 'hall'),
-                                           ('Cocina-almacen', (68.6, 465.2), True, 'norte')]},
-                          'p2': {'entradas': [],
-                                 'pasillo': [(76.8, 547.3), (80.6, 540.6), (83.5, 533.8), (85.7, 524.0), (89.5, 508.9),
-                                             (92.4, 500.0), (95.0, 492.0), (97.3, 482.6), (98.4, 475.8)],
-                                 'ramales': {'cocina': [(97.3, 482.3), (87.6, 479.5), (78.1, 476.5), (67.6, 473.4),
-                                                        (67.3, 465.0)],
-                                             'comedor': [(92.4, 500.0), (82.2, 499.4), (71.4, 497.1)],
-                                             'ne': [(97.3, 482.3), (109.2, 484.6), (120.0, 485.5), (128.0, 482.6)]},
-                                 'salas': [('Cocina concesionario', (72.7, 457.6), True, 'cocina'),
-                                           ('Almacen 1', (90.9, 469.7), True, 'pasillo'),
-                                           ('Comedor 49 sillas', (71.4, 497.4), False, 'comedor'),
-                                           ('Terraza 24 sillas', (101.3, 485.9), False, 'ne')]},
-                          'p3': {'entradas': [],
-                                 'pasillo': [(80.4, 555.2), (83.9, 544.7), (84.9, 530.6), (87.4, 516.6), (90.9, 502.5),
-                                             (94.2, 488.5), (96.6, 478.6)],
-                                 'ramales': {'ne': [(94.2, 488.5), (105.7, 488.5), (117.0, 485.9), (131.0, 482.8)],
-                                             'norte': [(96.6, 478.6), (90.2, 471.6), (83.2, 464.6)]},
-                                 'salas': [('SSHH hombres', (67.7, 530.6), True, 'pasillo'),
-                                           ('SSHH mujeres', (67.7, 544.7), True, 'pasillo'),
-                                           ('Hall', (88.8, 541.9), False, 'pasillo'),
-                                           ('Comedor', (86.3, 501.1), False, 'pasillo'),
-                                           ('Terraza', (100.4, 507.3), False, 'pasillo'),
-                                           ('Ambiente norte', (73.4, 454.7), True, 'norte')]},
-                          'p5': {'entradas': [],
-                                 'pasillo': [(84.1, 551.7), (87.1, 539.2), (87.9, 514.2), (87.5, 489.2), (87.5, 471.6),
-                                             (87.5, 462.3)],
-                                 'ramales': {},
-                                 'salas': [('Sala de reuniones', (70.6, 452.9), True, 'pasillo'),
-                                           ('Oficina abierta', (73.1, 489.2), False, 'pasillo'),
-                                           ('SSHH hombres', (71.9, 530.4), True, 'pasillo'),
-                                           ('SSHH mujeres', (71.9, 544.8), True, 'pasillo'),
-                                           ('Hall', (87.5, 537.9), False, 'pasillo')]}}}
-
-DATOS_L = {'ascensores': {'asc1': (598.9, 336.7), 'asc2': (597.6, 346.1)},
-           'entradas_p1': [('P4', (610, 353)), ('P3', (694, 353))],
-           'escaleras': {'C': (614.4, 315.6), 'E': (738.1, 302.9), 'O': (507.8, 301.0)},
-           'pasillo': [(510.8, 308.5), (512.6, 313.8), (517.7, 320.5), (525.4, 326.9), (532.7, 328.3), (563.2, 328.2),
-                       (590.7, 327.5), (603.1, 325.1), (615.1, 323.9), (625.9, 323.2), (658.2, 323.1), (694.2, 323.0),
-                       (725.7, 322.1), (737.9, 314.5)],
-           'pisos': 5,
-           'ramales': {'cuna': [(512.6, 313.8), (496.5, 314.3), (484.5, 313.2)],
-                       'nucleo': [(608.5, 324.8), (609.5, 313.8)],
-                       'vestibulo': [(608.5, 324.8), (608.0, 333.6), (606.8, 342.0)]},
-           'salas_p1': [('Informes y Admision (1)', (498.5, 324.0), False, 'cuna'),
-                        ('Hall principal (4)', (616.0, 335.6), False, 'vestibulo'),
-                        ('Cafeteria (3)', (680.9, 325.8), False, 'pasillo'), ('SSHH', (601.4, 299.8), True, 'nucleo'),
-                        ('SSHH discapacitados', (612.5, 305.0), True, 'nucleo')],
-           'salas_up': [('Sala triangular oeste', (475.3, 312.8), True, 'cuna'),
-                        ('Ambiente oeste', (561.0, 304.6), False, 'pasillo'),
-                        ('SSHH', (601.4, 299.8), True, 'nucleo'),
-                        ('SSHH discapacitados', (612.5, 305.0), True, 'nucleo'),
-                        ('Ambiente este', (680.2, 304.7), False, 'pasillo')]}
+_NO_DATOS = ("pabellon", "nota", "huellas")
+_K, _L = datos.crudo("K"), datos.crudo("L")
+HUELLAS = {"K": _K["huellas"], "L": _L["huellas"]}   # huellas 3D (px de plano.png): contorno gris de cada edificio en el plano
+DATOS_K = {k: v for k, v in _K.items() if k not in _NO_DATOS}
+DATOS_K["piso_plantilla"] = {int(k): v for k, v in DATOS_K["piso_plantilla"].items()}   # piso 4 usa la plantilla del piso 3
+DATOS_L = {k: v for k, v in _L.items() if k not in _NO_DATOS}

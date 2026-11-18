@@ -3,7 +3,8 @@ import sys
 
 from PySide6 import QtWidgets
 
-from interfaz.ventana import App, preparar
+from interfaz.estilo import preparar
+from interfaz.ventana import App
 from logica import algoritmos as alg
 
 

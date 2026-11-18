@@ -4,7 +4,6 @@ Cada puerta guarda ancho_m y escalon; es accesible si ancho >= ANCHO_MIN y no ha
 Los datos reales de puertas NO estan en los planos: por defecto 0.90 m y sin escalon.
 Para marcar una puerta no accesible, agregar en OVERRIDES: {"id_de_la_sala": {"ancho": 0.7}} o {"escalon": True}.
 """
-import math
 
 ANCHO_DEF = 0.90
 ANCHO_MIN = 0.80
